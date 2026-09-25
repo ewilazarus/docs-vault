@@ -1,6 +1,6 @@
 {
   "name": "docs-vault",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Five skills for a project's docs/ Obsidian vault: init bootstraps it, recall reads it, record writes it, todos lists the open work, and graph colour-codes the graph view. The vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md. Requires kepano/obsidian-skills.",
   "author": {
     "name": "ewilazarus"

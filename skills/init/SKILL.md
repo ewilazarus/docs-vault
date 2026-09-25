@@ -140,15 +140,17 @@ yet, because they matter from its first commit. Say what each group holds rather
 just naming "Obsidian files". A user who doesn't know what's in `.obsidian/` can't
 judge whether it belongs in the repo.
 
-- **View state, ignored by default.** Each user's open panes, and the graph view's
-  settings. Obsidian rewrites these whenever someone clicks around or zooms the graph, so
-  they'd churn on every commit. Graph colours stay per-user as a result, and
+- **Personal settings, ignored by default.** Each user's open panes, the graph view's
+  settings and their editor preferences, such as the default view mode. Obsidian rewrites
+  these whenever someone clicks around, zooms the graph or changes a preference, so
+  they'd churn on every commit, and they aren't the project's to set. Graph colours stay per-user as a result, and
   `/docs-vault:graph` sets them for whoever runs it:
 
   ```gitignore
   docs/.obsidian/workspace.json
   docs/.obsidian/workspace-mobile.json
   docs/.obsidian/graph.json
+  docs/.obsidian/app.json
   ```
 
 - **Community plugins, offered** if the survey found any. Their code and the list of enabled plugins
