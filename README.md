@@ -11,7 +11,7 @@ only two things:
 Everything else (folders, templates, bases, other tags, working rules) is up to each
 project, and lives in `docs/Conventions.md`.
 
-The plugin ships five skills:
+The plugin ships six skills:
 
 | Skill | What it does |
 |---|---|
@@ -19,6 +19,7 @@ The plugin ships five skills:
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open journal todo as a table: the day it was raised, its `#todo` block, its text and sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. |
+| `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
 
 ## Hooks
@@ -80,6 +81,6 @@ its `.claude/settings.json`:
 ```
 
 Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
-`docs-vault-init`, `docs-vault-recall`, `docs-vault-record`, `docs-vault-todos` and `docs-vault-graph`. The prefix keeps `init` from
+`docs-vault-init`, `docs-vault-recall`, `docs-vault-record`, `docs-vault-todos`, `docs-vault-graph` and `docs-vault-preset`. The prefix keeps `init` from
 clashing with Claude Code's built-in `/init`. Copied skills don't get the hooks or the
 dependency, so install kepano's obsidian-skills yourself.

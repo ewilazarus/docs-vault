@@ -175,5 +175,5 @@ conventions the user wants to settle once the project grows, in a `### #todo` bl
 ## 8. Hand over
 
 Tell the user to open `docs/` as a vault in Obsidian (Open folder as vault), and that
-`recall` and `record` take over from here. If the layout has more than one folder, mention that `/docs-vault:graph` colour-codes the graph view by folder. Summarise what was created, what was already there, and
+`recall` and `record` take over from here. If the layout has more than one folder, mention that `/docs-vault:graph` colour-codes the graph view by folder. If `~/.config/docs-vault/presets/` holds saved presets, offer `/docs-vault:preset` to apply one, so the new vault gets the user's usual Obsidian settings. Summarise what was created, what was already there, and
 what was skipped.
