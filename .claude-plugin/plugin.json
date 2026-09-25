@@ -1,0 +1,16 @@
+{
+  "name": "docs-vault",
+  "version": "0.1.0",
+  "description": "Two skills for a project's docs/ Obsidian vault: docs-vault-init bootstraps it, and docs-vault operates it. docs-vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md. Requires kepano/obsidian-skills.",
+  "author": {
+    "name": "ewilazarus"
+  },
+  "license": "MIT",
+  "keywords": [
+    "obsidian",
+    "docs",
+    "journal",
+    "runbooks",
+    "conventions"
+  ]
+}

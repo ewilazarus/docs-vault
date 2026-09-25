@@ -1,0 +1,14 @@
+{
+  "name": "docs-vault",
+  "owner": {
+    "name": "ewilazarus"
+  },
+  "plugins": [
+    {
+      "name": "docs-vault",
+      "source": "./",
+      "description": "Two skills for a project's docs/ Obsidian vault: docs-vault-init bootstraps it, and docs-vault operates it. docs-vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md.",
+      "version": "0.1.0"
+    }
+  ]
+}
