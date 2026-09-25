@@ -1,5 +1,5 @@
 ---
-name: docs-vault-init
+name: init
 description: Bootstrap a project's docs/ folder as an Obsidian vault run by the docs-vault skill. It sets up the journal, writes the project's Conventions.md with the user, and enables kepano's obsidian-skills. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
 ---
