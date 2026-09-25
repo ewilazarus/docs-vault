@@ -15,7 +15,7 @@ The plugin ships four skills:
 
 | Skill | What it does |
 |---|---|
-| `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, and records the setup as the first journal entry. It never overwrites existing files. |
+| `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. It never overwrites existing files. |
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open journal todo as a table: the day it was raised, its `#todo` block, its text and sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
