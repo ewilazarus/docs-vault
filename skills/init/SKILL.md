@@ -94,7 +94,7 @@ docs/.obsidian/workspace-mobile.json
 
 ## 6. Record the setup
 
-Write today's journal entry the way the `record` skill describes. It should have a `##` title in
+Load `/docs-vault:record`, then write today's journal entry the way it describes. It should have a `##` title in
 the past tense, a line of prose on what was set up, and a `### #decision` block for each
 real choice made in step 4, with its reason. Put anything left for later, such as
 conventions the user wants to settle once the project grows, in a `### #todo` block.

@@ -19,6 +19,23 @@ The plugin ships three skills:
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
 
+## Hooks
+
+When installed as a plugin, `docs-vault` also ships hooks, so the skills don't depend on
+Claude remembering to load them:
+
+- **Reading `docs/`** without `recall` loaded adds a reminder to load it.
+- **Writing `docs/`** without `record` (or `init`) loaded is blocked until Claude loads it.
+  Subagents count separately, because they don't share the parent's context.
+- **Editing a past journal day** is blocked unless the only change ticks a `- [ ]` box or
+  re-points a broken `[[link]]` while keeping its displayed text. Creating a backdated day
+  file is blocked too.
+
+The hooks are a bash script and need `jq`, which recent macOS ships and most Linux
+distributions package. If `jq` is missing or anything goes wrong, the hooks let the action
+through and report a hook error. They never lock you out of your own docs. They only see
+Claude's file tools, so Bash commands and your own edits in Obsidian are unaffected.
+
 It builds on [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) for the
 Markdown, Bases and CLI know-how.
 
@@ -54,6 +71,7 @@ To pin both for everyone who works on the project, add both marketplaces to its
 }
 ```
 
-Alternatively, copy both `skills/` folders into the project's `.claude/skills/`. In that case the commands
-are `/docs-vault-init`, `/docs-vault-recall` and `/docs-vault-record`, taken from the
-folder names. The init skill adds the obsidian-skills entries itself if they are missing.
+Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
+`docs-vault-init`, `docs-vault-recall` and `docs-vault-record`. The prefix keeps `init` from
+clashing with Claude Code's built-in `/init`. The init skill adds the obsidian-skills
+entries itself if they are missing. Copied skills don't get the hooks.
