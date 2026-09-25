@@ -6,6 +6,7 @@
 # - PostToolUse(Skill) and UserPromptExpansion note which docs-vault skills this session
 #   (or subagent) has loaded.
 # - PreToolUse on file tools:
+#   - docs/.obsidian/ holds Obsidian's settings, not notes, so it is left alone;
 #   - reading docs/ without `recall` loaded adds a reminder to load it;
 #   - writing docs/ without `record` (or `init`) loaded is denied;
 #   - editing a past journal day is denied unless the only changes tick `- [ ]` boxes or
@@ -140,6 +141,9 @@ case "$event" in
 esac
 
 rel=$(vault_relative "$target") || exit 0
+
+# Obsidian's own settings aren't notes, so neither the skills' rules nor their reminders apply.
+case "$rel" in .obsidian | .obsidian/*) exit 0 ;; esac
 
 case "$tool" in
   Read | Grep | Glob)

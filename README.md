@@ -11,13 +11,14 @@ only two things:
 Everything else (folders, templates, bases, other tags, working rules) is up to each
 project, and lives in `docs/Conventions.md`.
 
-The plugin ships four skills:
+The plugin ships five skills:
 
 | Skill | What it does |
 |---|---|
 | `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, offers both plugins to the project through its settings, creates the journal, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. It never overwrites existing files. |
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open journal todo as a table: the day it was raised, its `#todo` block, its text and sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
+| `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
 
 ## Hooks
@@ -27,7 +28,8 @@ Claude remembering to load them:
 
 - **Reading `docs/`** without `recall` loaded adds a reminder to load it.
 - **Writing `docs/`** without `record` (or `init`) loaded is blocked until Claude loads it.
-  Subagents count separately, because they don't share the parent's context.
+  Subagents count separately, because they don't share the parent's context. Obsidian's
+  own settings in `docs/.obsidian/` are exempt, because they aren't notes.
 - **Editing a past journal day** is blocked unless the only change ticks a `- [ ]` box or
   re-points a broken `[[link]]` while keeping its displayed text. Creating a backdated day
   file is blocked too.
@@ -78,6 +80,6 @@ its `.claude/settings.json`:
 ```
 
 Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
-`docs-vault-init`, `docs-vault-recall`, `docs-vault-record` and `docs-vault-todos`. The prefix keeps `init` from
+`docs-vault-init`, `docs-vault-recall`, `docs-vault-record`, `docs-vault-todos` and `docs-vault-graph`. The prefix keeps `init` from
 clashing with Claude Code's built-in `/init`. Copied skills don't get the hooks or the
 dependency, so install kepano's obsidian-skills yourself.
