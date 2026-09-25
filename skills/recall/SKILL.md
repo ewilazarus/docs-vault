@@ -43,7 +43,8 @@ The journal uses two tags, each at the start of a `###` block title inside an en
   decision explains why, someone made that call on purpose.
 - **`### #todo`** marks a block of open work. **The unticked boxes across `journal/` are
   the project's TODO list.** An unticked box is the one part of the journal that *is*
-  current, because nothing has ticked it yet.
+  current, because nothing has ticked it yet. For the whole
+  list as a table, with a suggestion of what to do next, use `/docs-vault:todos`.
 
 Each day file's `description:` is that day's headline, so a sweep of descriptions is a
 quick index of the project's history.
