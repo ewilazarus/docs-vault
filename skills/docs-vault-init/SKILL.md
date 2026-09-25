@@ -1,12 +1,12 @@
 ---
 name: init
-description: Bootstrap a project's docs/ folder as an Obsidian vault run by the docs-vault skill. It sets up the journal, writes the project's Conventions.md with the user, and enables kepano's obsidian-skills. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
+description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal, writes the project's Conventions.md with the user, and enables kepano's obsidian-skills. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
 ---
 
 # Bootstrap the docs vault
 
-This sets up a project so the `docs-vault` skill can operate it. `docs-vault` fixes only
+This sets up a project so the `recall` and `record` skills can operate it. They fix only
 the journal and its `#decision` and `#todo` tags. Everything else is defined by the
 `Conventions.md` you write here, together with the user.
 
@@ -32,7 +32,7 @@ here. That is a separate job, and only if the user asks.
 
 ## 2. Enable obsidian-skills
 
-`docs-vault` relies on kepano's `obsidian-markdown`, `obsidian-bases` and `obsidian-cli`
+`recall` and `record` rely on kepano's `obsidian-markdown`, `obsidian-bases` and `obsidian-cli`
 skills. If `.claude/settings.json` doesn't already enable them, merge these keys into the
 file, keeping everything else it contains:
 
@@ -77,7 +77,7 @@ not one by one:
 
 Leave a section out if the user has no answer for it yet. An empty heading is not
 a convention. Keep each rule an instruction, followed by its reason. **Don't restate
-docs-vault's journal rules here.** A copy is one more place that goes stale.
+the journal rules from `record` here.** A copy is one more place that goes stale.
 
 If `docs/Conventions.md` already exists, don't rewrite it. Offer only the additions the
 survey turned up.
@@ -94,7 +94,7 @@ docs/.obsidian/workspace-mobile.json
 
 ## 6. Record the setup
 
-Write today's journal entry the way `docs-vault` describes. It should have a `##` title in
+Write today's journal entry the way the `record` skill describes. It should have a `##` title in
 the past tense, a line of prose on what was set up, and a `### #decision` block for each
 real choice made in step 4, with its reason. Put anything left for later, such as
 conventions the user wants to settle once the project grows, in a `### #todo` block.
@@ -102,5 +102,5 @@ conventions the user wants to settle once the project grows, in a `### #todo` bl
 ## 7. Hand over
 
 Tell the user to open `docs/` as a vault in Obsidian (Open folder as vault), and that
-`docs-vault` takes over from here. Summarise what was created, what was already there, and
+`recall` and `record` take over from here. Summarise what was created, what was already there, and
 what was skipped.

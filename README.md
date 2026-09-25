@@ -11,12 +11,13 @@ only two things:
 Everything else (folders, templates, bases, other tags, working rules) is up to each
 project, and lives in `docs/Conventions.md`.
 
-The plugin ships two skills:
+The plugin ships three skills:
 
 | Skill | What it does |
 |---|---|
 | `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, and records the setup as the first journal entry. It never overwrites existing files. |
-| `docs-vault` | Invoked as `/docs-vault:docs-vault`, but it usually runs on its own whenever work touches the vault. It reads `Conventions.md`, keeps the journal, and follows the tag rules. |
+| `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
+| `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
 
 It builds on [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) for the
 Markdown, Bases and CLI know-how.
@@ -54,5 +55,5 @@ To pin both for everyone who works on the project, add both marketplaces to its
 ```
 
 Alternatively, copy both `skills/` folders into the project's `.claude/skills/`. In that case the commands
-are `/docs-vault-init` and `/docs-vault`, taken from the folder
-names. The init skill adds the obsidian-skills entries itself if they are missing.
+are `/docs-vault-init`, `/docs-vault-recall` and `/docs-vault-record`, taken from the
+folder names. The init skill adds the obsidian-skills entries itself if they are missing.

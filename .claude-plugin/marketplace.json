@@ -8,7 +8,7 @@
     {
       "name": "docs-vault",
       "source": "./",
-      "description": "Two skills for a project's docs/ Obsidian vault: docs-vault-init bootstraps it, and docs-vault operates it. docs-vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md.",
+      "description": "Three skills for a project's docs/ Obsidian vault: init bootstraps it, recall reads it, and record writes it. The vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md.",
       "version": "0.1.0"
     }
   ]

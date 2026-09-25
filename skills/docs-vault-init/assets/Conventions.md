@@ -2,7 +2,7 @@
 description: "How this vault is organised, and the rules that bind work on this project."
 ---
 <!--
-The docs-vault skill fixes only the journal and its #decision and #todo tags. Everything
+The docs-vault skills fix only the journal and its #decision and #todo tags. Everything
 else is defined here. Delete the sections you don't need, and this comment too.
 -->
 
