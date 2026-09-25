@@ -32,7 +32,7 @@ Add both marketplaces to the project's `.claude/settings.json`:
       "source": { "source": "github", "repo": "kepano/obsidian-skills" }
     },
     "docs-vault": {
-      "source": { "source": "github", "repo": "<owner>/<this-repo>" }
+      "source": { "source": "github", "repo": "ewilazarus/docs-vault" }
     }
   },
   "enabledPlugins": {
