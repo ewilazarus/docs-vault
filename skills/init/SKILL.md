@@ -141,8 +141,9 @@ just naming "Obsidian files". A user who doesn't know what's in `.obsidian/` can
 judge whether it belongs in the repo.
 
 - **Personal settings, ignored by default.** Each user's open panes, the graph view's
-  settings and their editor preferences, such as the default view mode. Obsidian rewrites
-  these whenever someone clicks around, zooms the graph or changes a preference, so
+  settings, their editor preferences such as the default view mode, and their theme and
+  fonts. Obsidian rewrites these whenever someone clicks around, zooms the graph or
+  changes a preference, so
   they'd churn on every commit, and they aren't the project's to set. Graph colours stay per-user as a result, and
   `/docs-vault:graph` sets them for whoever runs it:
 
@@ -151,6 +152,7 @@ judge whether it belongs in the repo.
   docs/.obsidian/workspace-mobile.json
   docs/.obsidian/graph.json
   docs/.obsidian/app.json
+  docs/.obsidian/appearance.json
   ```
 
 - **Community plugins, offered** if the survey found any. Their code and the list of enabled plugins
