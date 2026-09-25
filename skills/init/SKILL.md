@@ -135,20 +135,23 @@ Pick the file from the survey, and show the user the change before writing it:
 
 ## 6. Keep Obsidian's per-user state out of git
 
-Offer the lines `.gitignore` doesn't already cover, even if the project isn't a git repo
+Add the lines `.gitignore` doesn't already cover, even if the project isn't a git repo
 yet, because they matter from its first commit. Say what each group holds rather than
-just asking about "Obsidian files". A user who doesn't know what's in `.obsidian/` can't
+just naming "Obsidian files". A user who doesn't know what's in `.obsidian/` can't
 judge whether it belongs in the repo.
 
-- **Workspace layout.** Each user's open panes. They change whenever someone clicks
-  around, so they'd churn on every commit:
+- **View state, ignored by default.** Each user's open panes, and the graph view's
+  settings. Obsidian rewrites these whenever someone clicks around or zooms the graph, so
+  they'd churn on every commit. Graph colours stay per-user as a result, and
+  `/docs-vault:graph` sets them for whoever runs it:
 
   ```gitignore
   docs/.obsidian/workspace.json
   docs/.obsidian/workspace-mobile.json
+  docs/.obsidian/graph.json
   ```
 
-- **Community plugins,** if the survey found any. Their code and the list of enabled plugins
+- **Community plugins, offered** if the survey found any. Their code and the list of enabled plugins
   are usually personal installs:
 
   ```gitignore

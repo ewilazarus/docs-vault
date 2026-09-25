@@ -78,5 +78,6 @@ isn't available, ask the user to run **Reload app without saving** from the comm
 
 ## Nothing to record
 
-The colours are display settings, and git records the change. Don't write a journal entry
-unless the user asks for one.
+The colours are per-user display settings. `init` keeps `graph.json` out of git, because
+Obsidian rewrites it whenever the graph is zoomed, so each user runs this skill for
+themselves. Don't write a journal entry unless the user asks for one.
