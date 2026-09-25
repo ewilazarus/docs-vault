@@ -15,7 +15,7 @@ The plugin ships four skills:
 
 | Skill | What it does |
 |---|---|
-| `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. It never overwrites existing files. |
+| `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, offers both plugins to the project through its settings, creates the journal, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. It never overwrites existing files. |
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open journal todo as a table: the day it was raised, its `#todo` block, its text and sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
@@ -45,15 +45,20 @@ Markdown, Bases and CLI know-how.
 Interactively, from any project:
 
 ```
+/plugin marketplace add kepano/obsidian-skills
 /plugin marketplace add ewilazarus/docs-vault
 /plugin install docs-vault@docs-vault
 ```
 
-Then run `/docs-vault:init`. It adds kepano's obsidian-skills to the project's
-settings if they are missing.
+`docs-vault` depends on kepano's `obsidian` plugin, so the install brings it along.
+Claude Code only resolves a dependency from a marketplace you've already added, so add
+kepano's first. Without it, the install fails with `Is the "obsidian-skills" marketplace
+added?`.
 
-To pin both for everyone who works on the project, add both marketplaces to its
-`.claude/settings.json`:
+Then run `/docs-vault:init`. Among other things, it adds the settings below to the project.
+
+To offer both plugins to everyone who works on the project, declare both marketplaces in
+its `.claude/settings.json`:
 
 ```json
 {
@@ -74,5 +79,5 @@ To pin both for everyone who works on the project, add both marketplaces to its
 
 Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
 `docs-vault-init`, `docs-vault-recall`, `docs-vault-record` and `docs-vault-todos`. The prefix keeps `init` from
-clashing with Claude Code's built-in `/init`. The init skill adds the obsidian-skills
-entries itself if they are missing. Copied skills don't get the hooks.
+clashing with Claude Code's built-in `/init`. Copied skills don't get the hooks or the
+dependency, so install kepano's obsidian-skills yourself.

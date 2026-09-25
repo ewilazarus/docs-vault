@@ -4,12 +4,21 @@
   "owner": {
     "name": "ewilazarus"
   },
+  "allowCrossMarketplaceDependenciesOn": [
+    "obsidian-skills"
+  ],
   "plugins": [
     {
       "name": "docs-vault",
       "source": "./",
       "description": "Four skills for a project's docs/ Obsidian vault: init bootstraps it, recall reads it, record writes it, and todos lists the open work. The vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md.",
-      "version": "0.1.0"
+      "version": "0.1.0",
+      "dependencies": [
+        {
+          "name": "obsidian",
+          "marketplace": "obsidian-skills"
+        }
+      ]
     }
   ]
 }

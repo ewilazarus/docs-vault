@@ -1,6 +1,6 @@
 ---
 name: init
-description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and enables kepano's obsidian-skills. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
+description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
 ---
 
@@ -33,27 +33,33 @@ Report what is already in place and what this run would add. If `docs/` already 
 notes, the conventions describe *those notes as they are*. Don't propose restructuring them
 here. That is a separate job, and only if the user asks.
 
-## 2. Enable obsidian-skills
+## 2. Offer the plugins to everyone on the project
 
-`recall` and `record` rely on kepano's `obsidian-markdown`, `obsidian-bases` and `obsidian-cli`
-skills. If `.claude/settings.json` doesn't already enable them, merge these keys into the
-file, keeping everything else it contains:
+`docs-vault` depends on kepano's `obsidian` plugin, from the `obsidian-skills` marketplace,
+and Claude Code installs it along with `docs-vault`. It only does that from a marketplace
+that is already added, so the project should declare both. Then anyone who opens the
+project is offered the plugins. If `.claude/settings.json` doesn't already have these keys,
+merge them in, keeping everything else the file contains:
 
 ```json
 {
   "extraKnownMarketplaces": {
     "obsidian-skills": {
       "source": { "source": "github", "repo": "kepano/obsidian-skills" }
+    },
+    "docs-vault": {
+      "source": { "source": "github", "repo": "ewilazarus/docs-vault" }
     }
   },
   "enabledPlugins": {
-    "obsidian@obsidian-skills": true
+    "obsidian@obsidian-skills": true,
+    "docs-vault@docs-vault": true
   }
 }
 ```
 
-Plugins load at session start, so tell the user the change takes effect in their next
-session.
+Plugins load at session start, so tell the user the change takes effect for others on
+their next session.
 
 ## 3. Create the journal
 
