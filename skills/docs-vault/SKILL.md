@@ -129,6 +129,7 @@ rg -il 'connection pool'               # full text
 ## If the vault isn't set up
 
 If `docs/journal/` doesn't exist, create it the first time there is something to record.
-If `docs/Conventions.md` doesn't exist, mention `/docs-vault-init` once and carry on. Don't
+If `docs/Conventions.md` doesn't exist, mention the `docs-vault-init` skill once (`/docs-vault:docs-vault-init` as a
+plugin, `/docs-vault-init` when copied into `.claude/skills/`) and carry on. Don't
 bootstrap the vault yourself, and don't restructure existing notes to fit any convention
 unless the user asks.

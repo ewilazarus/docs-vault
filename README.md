@@ -15,7 +15,7 @@ The plugin ships two skills:
 
 | Skill | What it does |
 |---|---|
-| `docs-vault-init` | Run once, as `/docs-vault-init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, and records the setup as the first journal entry. It never overwrites existing files. |
+| `docs-vault-init` | Run once, as `/docs-vault:docs-vault-init`. It surveys `docs/`, enables obsidian-skills, creates the journal, writes `Conventions.md` with you, and records the setup as the first journal entry. It never overwrites existing files. |
 | `docs-vault` | Runs on its own whenever work touches the vault. It reads `Conventions.md`, keeps the journal, and follows the tag rules. |
 
 It builds on [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) for the
@@ -23,7 +23,18 @@ Markdown, Bases and CLI know-how.
 
 ## Install in a project
 
-Add both marketplaces to the project's `.claude/settings.json`:
+Interactively, from any project:
+
+```
+/plugin marketplace add ewilazarus/docs-vault
+/plugin install docs-vault@docs-vault
+```
+
+Then run `/docs-vault:docs-vault-init`. It adds kepano's obsidian-skills to the project's
+settings if they are missing.
+
+To pin both for everyone who works on the project, add both marketplaces to its
+`.claude/settings.json`:
 
 ```json
 {
@@ -42,5 +53,5 @@ Add both marketplaces to the project's `.claude/settings.json`:
 }
 ```
 
-Alternatively, copy both `skills/` folders into the project's `.claude/skills/`. Then run
-`/docs-vault-init`. It adds the obsidian-skills entries itself if they are missing.
+Alternatively, copy both `skills/` folders into the project's `.claude/skills/`. In that case the command
+is `/docs-vault-init`. It adds the obsidian-skills entries itself if they are missing.
