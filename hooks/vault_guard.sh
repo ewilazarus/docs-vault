@@ -157,12 +157,12 @@ esac
 loaded record || loaded init ||
   deny "Writes to docs/ go through the record skill. Load /docs-vault:record, then retry this change."
 
-day=$(printf '%s\n' "$rel" | sed -n 's#^journal/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)\.md$#\1#p')
+day=$(printf '%s\n' "$rel" | sed -n 's#^Journal/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)\.md$#\1#p')
 if [ -n "$day" ] && [[ "$day" < "$(date +%F)" ]]; then
   current=""
   [ -f "$project/docs/$rel" ] && current=$(cat "$project/docs/$rel"; printf x) && current=${current%x}
   problem=$(past_entry_problem "$current")
   [ -z "$problem" ] ||
-    deny "journal/$day.md is a past day. $problem The only edits a past entry gets are ticking a \`- [ ]\` box or re-pointing a broken [[link]] while keeping its displayed text. Write anything else in today's entry, and say which earlier entry it corrects."
+    deny "Journal/$day.md is a past day. $problem The only edits a past entry gets are ticking a \`- [ ]\` box or re-pointing a broken [[link]] while keeping its displayed text. Write anything else in today's entry, and say which earlier entry it corrects."
 fi
 exit 0

@@ -6,7 +6,7 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/todos.sh), Read, Grep, Glob, Bas
 
 # Open todos
 
-A script has already collected the open todos from `docs/journal/`. Every unticked
+A script has already collected the open todos from `docs/Journal/`. Every unticked
 top-level `- [ ]` box is one row, oldest first. Here is its output:
 
 !`${CLAUDE_SKILL_DIR}/scripts/todos.sh`

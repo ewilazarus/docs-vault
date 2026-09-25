@@ -24,7 +24,7 @@ heredoc or `>` into the project as a possible overwrite, and may block it.
 From the project root:
 
 ```bash
-ls -la docs/ docs/.obsidian docs/journal 2>&1 | head -40
+ls -la docs/ docs/.obsidian docs/Journal 2>&1 | head -40
 test -f docs/Conventions.md && sed -n '1,40p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
 cat .claude/settings.json 2>/dev/null
@@ -70,11 +70,11 @@ their next session.
 ## 3. Create the journal
 
 ```bash
-mkdir -p docs/journal
+mkdir -p docs/Journal
 ```
 
 If the user uses Obsidian's Daily notes plugin, point it at the journal: set `"folder":
-"journal/"` in `docs/.obsidian/daily-notes.json`, merging into that file if it exists.
+"Journal/"` in `docs/.obsidian/daily-notes.json`, merging into that file if it exists.
 
 **Obsidian reads `.obsidian/*.json` only at startup, and writes its in-memory settings
 back when they change.** If the survey found Obsidian running, an edit to those files

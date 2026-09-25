@@ -3,7 +3,7 @@
 Claude Code skills for projects that keep a `docs/` folder as an Obsidian vault. They fix
 only two things:
 
-- **The journal.** `docs/journal/YYYY-MM-DD.md`, append-only. It records what was done,
+- **The journal.** `docs/Journal/YYYY-MM-DD.md`, append-only. It records what was done,
   decided and left open, while the rest of the vault holds what is true now.
 - **Two tags.** `#decision` for each call made, with its reason. `#todo` for each block of
   open work, whose unticked boxes form the project's TODO list.
@@ -19,7 +19,7 @@ The plugin ships six skills:
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what was decided or what is open. It reads `Conventions.md`, queries the notes and journal, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open journal todo as a table: the day it was raised, its `#todo` block, its text and sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. |
-| `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
+| `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets, and the sidebar layout without any open notes) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
 | `record` | Writes journal entries with `#decision` and `#todo`, ticks finished todos, and rewrites or creates notes when a fact changes. It loads `recall` first. |
 
 ## Hooks

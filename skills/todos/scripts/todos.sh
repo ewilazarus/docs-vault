@@ -3,7 +3,7 @@
 #
 #   todos.sh [docs-dir]    (defaults to $CLAUDE_PROJECT_DIR/docs, or ./docs)
 #
-# Reads journal/YYYY-MM-DD.md, oldest day first. Every unticked top-level `- [ ]` box is one
+# Reads Journal/YYYY-MM-DD.md, oldest day first. Every unticked top-level `- [ ]` box is one
 # row: the day it was raised, the `### #todo` block it sits in, its text (continuation lines
 # joined), and its nested sub-items with their own state. Unticked boxes outside a `#todo`
 # block are listed too, because every unticked box in the journal is open work.
@@ -12,7 +12,7 @@
 set -eu
 
 docs=${1:-${CLAUDE_PROJECT_DIR:-.}/docs}
-journal="$docs/journal"
+journal="$docs/Journal"
 
 if [ ! -d "$journal" ]; then
   echo "No journal found at \`$journal\`."

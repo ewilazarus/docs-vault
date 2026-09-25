@@ -29,7 +29,7 @@ section. Useful defaults:
 - **One colour per top-level folder.** A folder is usually one kind of note.
 - **A colour for root notes that act as entry points,** such as a home or index note and
   `Conventions.md`. Match them with `file:Home OR file:Conventions`.
-- **A muted grey for `journal/`.** The journal links to everything and would otherwise
+- **A muted grey for `Journal/`.** The journal links to everything and would otherwise
   dominate the graph.
 - **A split within a folder where it means something,** such as core concepts versus
   the layers built on them. Match those notes by name.
@@ -47,7 +47,7 @@ graph settings. Create the file if it doesn't exist.
 ```json
 "colorGroups": [
   { "query": "file:Home OR file:Conventions", "color": { "a": 1, "rgb": 16098851 } },
-  { "query": "path:journal", "color": { "a": 1, "rgb": 9080728 } },
+  { "query": "path:Journal", "color": { "a": 1, "rgb": 9080728 } },
   { "query": "path:Concepts", "color": { "a": 1, "rgb": 5016565 } }
 ]
 ```

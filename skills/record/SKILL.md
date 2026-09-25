@@ -26,7 +26,7 @@ current state and the story of how it got there, so split it.
 
 ## Writing notes
 
-Everything outside `journal/` describes **what is true now**. Rewrite notes in place when
+Everything outside `Journal/` describes **what is true now**. Rewrite notes in place when
 that changes.
 
 - **Follow the project's conventions.** Put a note where `Conventions.md` says, with the
@@ -44,7 +44,7 @@ Don't restructure existing notes to fit a convention unless the user asks.
 
 ## Writing a journal entry
 
-There is one file per day, `journal/YYYY-MM-DD.md`, and both the user and the agent write
+There is one file per day, `Journal/YYYY-MM-DD.md`, and both the user and the agent write
 to it. Several entries can share a day: add a new section, and never rewrite an existing
 one.
 
@@ -93,5 +93,5 @@ happened in today's entry, and rewrite any note whose facts changed.
 
 ## If the vault isn't set up
 
-If `journal/` doesn't exist, create it with the first entry. If `Conventions.md` doesn't
+If `Journal/` doesn't exist, create it with the first entry. If `Conventions.md` doesn't
 exist, mention `/docs-vault:init` (or `/docs-vault-init`) once and carry on. Don't bootstrap the vault yourself.

@@ -9,12 +9,15 @@
 # The vault defaults to ./docs. Presets live in $DOCS_VAULT_PRESETS, or else
 # ${XDG_CONFIG_HOME:-~/.config}/docs-vault/presets/<name>/, mirroring .obsidian/.
 #
-# A preset holds settings only: never workspace state, and never plugin code. Community
-# plugins are saved as their IDs plus their data.json, so they can be installed fresh.
+# A preset holds settings only, never notes or plugin code. Community plugins are saved as
+# their IDs plus their data.json, so they can be installed fresh. From workspace.json it
+# keeps only the layout (sidebars and ribbon), never which notes are open.
 #
 # apply merges key by key. A key the vault doesn't set yet takes the preset's value. A key
 # the vault already sets to something else is a conflict: the vault keeps its value unless
-# --prefer preset is given. Needs jq. Written for bash 3.2, which macOS still ships.
+# --prefer preset is given. The layout is one conflict as a whole: a vault that already has
+# one keeps it unless --prefer preset is given, and its open notes are kept either way.
+# Needs jq 1.6 or later. Written for bash 3.2, which macOS still ships.
 
 set -euo pipefail
 
@@ -27,7 +30,27 @@ settings="app.json appearance.json core-plugins.json daily-notes.json hotkeys.js
 # graph.json keys that only record where the user last left the view.
 graph_volatile='["scale", "close", "search"]'
 
+# workspace.json keys that make up the layout. The rest (main, active, lastOpenFiles) is
+# the session: which notes are open, in a particular vault.
+layout_keys='["left", "right", "left-ribbon"]'
+
 die() { echo "$*" >&2; exit 2; }
+
+# The layout part of a workspace.json, with any note references and search text removed.
+layout_of() {
+  jq --argjson keep "$layout_keys" '
+    with_entries(select(.key as $k | $keep | index($k)))
+    | walk(if type == "object" then
+        del(.file)
+        | if has("query") then .query = "" else . end
+        | if has("searchQuery") then .searchQuery = "" else . end
+      else . end)' "$1"
+}
+
+# A main area with one empty tab, for a vault that has no workspace.json yet.
+empty_main='{"main": {"id": "d0c5a0170000main", "type": "split", "direction": "vertical",
+  "children": [{"id": "d0c5a0170000tabs", "type": "tabs", "children": [{"id": "d0c5a0170000leaf",
+  "type": "leaf", "state": {"type": "empty", "state": {}, "icon": "lucide-file", "title": "New tab"}}]}]}}'
 
 usage() { sed -n '4,8p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
@@ -61,6 +84,7 @@ preset_files() {
   for f in $settings community-plugins.json; do
     [ -f "$dir/$f" ] && echo "$f"
   done
+  [ -f "$dir/layout.json" ] && echo layout.json
   if [ -d "$dir/plugins" ]; then
     (cd "$dir" && find plugins -mindepth 2 -maxdepth 2 -name data.json | sort)
   fi
@@ -105,6 +129,8 @@ cmd_save() {
       fi
     done
   fi
+
+  [ -f "$config/workspace.json" ] && layout_of "$config/workspace.json" > "$dir/layout.json"
 
   if [ -d "$config/snippets" ]; then
     for f in "$config"/snippets/*.css; do
@@ -164,6 +190,26 @@ cmd_plan_or_apply() {
         else
           any=1; echo "$rel: new file"
           [ "$mode" = apply ] && mkdir -p "$(dirname "$target")" && cp "$dir/$rel" "$target"
+        fi
+        continue
+        ;;
+      layout.json)
+        target="$config/workspace.json"
+        if [ ! -f "$target" ]; then
+          any=1; echo "workspace.json: new file, layout only"
+          [ "$mode" = apply ] &&
+            jq --argjson main "$empty_main" '$main + .' "$dir/layout.json" > "$target"
+        elif [ "$(layout_of "$target" | jq -S .)" != "$(jq -S . "$dir/layout.json")" ]; then
+          any=1
+          case "$mode:$prefer" in
+            apply:preset)
+              echo "workspace.json: conflict layout -> took preset, open notes kept"
+              jq --slurpfile p "$dir/layout.json" '. + $p[0]' "$target" > "$target.tmp"
+              mv "$target.tmp" "$target"
+              ;;
+            apply:vault) echo "workspace.json: conflict layout -> kept vault" ;;
+            *) echo "workspace.json: conflict layout (the vault already has one)" ;;
+          esac
         fi
         continue
         ;;

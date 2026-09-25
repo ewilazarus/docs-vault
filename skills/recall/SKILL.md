@@ -21,8 +21,8 @@ organised before assuming anything.
 
 ## Notes are the present, the journal is history
 
-- **`journal/`** holds **what was done, decided and left open**, one file per day
-  (`journal/YYYY-MM-DD.md`). It is append-only and never the authority on the present.
+- **`Journal/`** holds **what was done, decided and left open**, one file per day
+  (`Journal/YYYY-MM-DD.md`). It is append-only and never the authority on the present.
 - **Every other note** holds **what is true now**, however the project organises it.
 
 So answer "how does X work" or "what is X" from the notes, and "why is X like this" or
@@ -41,7 +41,7 @@ The journal uses two tags, each at the start of a `###` block title inside an en
 - **`### #decision`** marks a call that was made, with its reason. **Don't undo a recorded
   decision unless asked.** If something is disabled, pinned or deliberately missing and a
   decision explains why, someone made that call on purpose.
-- **`### #todo`** marks a block of open work. **The unticked boxes across `journal/` are
+- **`### #todo`** marks a block of open work. **The unticked boxes across `Journal/` are
   the project's TODO list.** An unticked box is the one part of the journal that *is*
   current, because nothing has ticked it yet. For the whole
   list as a table, with a suggestion of what to do next, use `/docs-vault:todos`.
@@ -66,9 +66,9 @@ obsidian backlinks file="Connection pool"       # what refers to a note
 ```
 
 ```bash
-rg '^- \[ \]' docs/journal/              # open work
-rg -A3 '^### #decision' docs/journal/    # every decision, with its reason
-rg '^description:' docs/journal/         # one headline per day
+rg '^- \[ \]' docs/Journal/              # open work
+rg -A3 '^### #decision' docs/Journal/    # every decision, with its reason
+rg '^description:' docs/Journal/         # one headline per day
 rg -il 'connection pool' docs/           # full text
 fd -F "Connection pool.md" docs/         # where a [[link]] actually lives
 ```

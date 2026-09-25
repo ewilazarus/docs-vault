@@ -12,7 +12,7 @@
       "name": "docs-vault",
       "source": "./",
       "description": "Six skills for a project's docs/ Obsidian vault: init bootstraps it, recall reads it, record writes it, todos lists the open work, graph colour-codes the graph view, and preset saves and applies your Obsidian settings. The vault keeps a dated, append-only journal with #decision and #todo tags, and leaves everything else to the project's Conventions.md.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": [
         {
           "name": "obsidian",

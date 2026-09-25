@@ -30,8 +30,11 @@ can move.
 - **Community plugins:** their IDs and each plugin's `data.json` settings, never their code.
   `apply` reports them as not installed, and they're installed fresh.
 - **CSS snippets** from `snippets/`.
+- **The layout:** the sidebars and ribbon from `workspace.json`, meaning which panels
+  they hold, in what order, and how wide. It's saved as `layout.json`, with search text
+  cleared and any note references removed.
 
-Never notes, folders or `Conventions.md`, and never workspace state.
+Never notes, folders or `Conventions.md`, and never which notes are open.
 
 ## Save
 
@@ -46,10 +49,12 @@ Never notes, folders or `Conventions.md`, and never workspace state.
    which one.
 2. **Plan first.** Run `preset.sh plan <name>` and show the user its output. Nothing
    changes yet. `add` lines fill in settings the vault doesn't have. `conflict` lines are
-   settings the vault already sets differently.
+   settings the vault already sets differently. A vault that Obsidian has opened always has
+   a layout of its own, so `conflict layout` is expected there.
 3. **Settle conflicts.** If there are any, ask whether to keep the vault's values (the
    default) or take the preset's (`--prefer preset`). The choice applies to every conflict
-   in the run.
+   in the run. Taking the preset's layout replaces only the sidebars and ribbon. The
+   notes open in the vault stay open.
 4. **Apply** with `preset.sh apply <name>`, plus `--prefer preset` if chosen. It's safe to
    re-run.
 5. **Install missing plugins.** For each `not installed:` line, offer to install it through
@@ -67,8 +72,10 @@ Never notes, folders or `Conventions.md`, and never workspace state.
 6. **Graph colours.** If the plan says colour groups match folders this vault doesn't have,
    offer `/docs-vault:graph` to recolour the graph for this vault's layout.
 7. **Reload Obsidian.** Obsidian reads these files only at startup, and writes its
-   in-memory settings back over them when a setting changes. If it's running, offer
-   `obsidian command id=app:reload`, after `obsidian vault` confirms the target.
+   in-memory settings back over them when a setting changes. It rewrites
+   `workspace.json` whenever a pane moves, so reload promptly after applying a layout. If
+   it's running, offer `obsidian command id=app:reload`, after `obsidian vault` confirms
+   the target.
    Otherwise ask the user to run **Reload app without saving** from the command palette.
 
 ## Nothing to record
