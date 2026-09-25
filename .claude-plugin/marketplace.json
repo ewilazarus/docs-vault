@@ -1,5 +1,6 @@
 {
   "name": "docs-vault",
+  "description": "Skills for keeping a project's docs/ folder as an Obsidian vault.",
   "owner": {
     "name": "ewilazarus"
   },
