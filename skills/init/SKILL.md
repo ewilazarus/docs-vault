@@ -1,14 +1,15 @@
 ---
 name: init
-description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
+description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal and the decisions folder, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
 ---
 
 # Bootstrap the docs vault
 
-This sets up a project so the `recall` and `record` skills can operate it. They fix only
-the journal and its `#decision` and `#todo` tags. Everything else is defined by the
-`Conventions.md` you write here, together with the user.
+This sets up a project so the `recall` and `record` skills can operate it. docs-vault owns
+only two folders: `Journal/`, the daily record of what meaningful things happened and what
+was left open, and `Decisions/`, one note per important choice and its reason. Everything
+else is defined by the `Conventions.md` you write here, together with the user.
 
 **Never overwrite or move an existing file.** Where something already exists, adopt it,
 report it, and move on. The one exception is the marked docs-vault section in `CLAUDE.md`,
@@ -24,7 +25,7 @@ heredoc or `>` into the project as a possible overwrite, and may block it.
 From the project root:
 
 ```bash
-ls -la docs/ docs/.obsidian docs/Journal 2>&1 | head -40
+ls -la docs/ docs/.obsidian docs/Journal docs/Decisions 2>&1 | head -40
 test -f docs/Conventions.md && sed -n '1,40p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
 cat .claude/settings.json 2>/dev/null
@@ -67,11 +68,15 @@ merge them in, keeping everything else the file contains:
 Plugins load at session start, so tell the user the change takes effect for others on
 their next session.
 
-## 3. Create the journal
+## 3. Create the journal and the decisions folder
 
 ```bash
-mkdir -p docs/Journal
+mkdir -p docs/Journal docs/Decisions
 ```
+
+Don't create a folder for todos or tasks. Open work is a plain checkbox under a
+`## Follow-ups` heading in the journal day where it came up, and `/docs-vault:todos` lists
+it from there.
 
 If the user uses Obsidian's Daily notes plugin, point it at the journal: set `"folder":
 "Journal/"` in `docs/.obsidian/daily-notes.json`, merging into that file if it exists.
@@ -90,21 +95,25 @@ Start from this skill's `assets/Conventions.md`, and fill it in from what the su
 and what the user tells you. Ask about the things you can't infer, and ask them together,
 not one by one:
 
-- **Layout:** which folders exist or should exist, and what each one holds. Don't give
-  decisions or open questions a folder of their own, such as ADRs or question notes. The
-  journal's `#decision` and `#todo` blocks hold them, and the skills only look there.
+- **Layout:** which folders exist or should exist, and what each one holds. `Journal/`
+  and `Decisions/` belong to docs-vault, so don't define them again. Don't add another
+  home for decisions or open work either, such as an ADR folder, a todo list or question
+  notes. The skills only look in `Decisions/` and in the journal's Follow-ups.
 - **Notes:** how notes are named, which frontmatter they carry, and whether there are
   templates. If there are, record the folder they live in. If the user has no preference
-  on frontmatter, offer a single `description:` line. The journal's day files and
-  `Conventions.md` already carry one, so `rg '^description:' docs/` indexes the whole vault.
-- **Tags and callouts:** anything beyond `#decision` and `#todo`, and where it goes.
+  on frontmatter, offer a single `description:` line. The journal's day files, the
+  decisions and `Conventions.md` already carry one, so `rg '^description:' docs/` indexes
+  the whole vault.
+- **Tags and callouts:** any the project uses, and where they go. docs-vault itself uses
+  none, because its headings and folders carry the meaning.
 - **Rules:** anything that binds work on this project. Examples are what needs
   confirming first, what must never be done, and how to reach the systems the vault
   documents.
 
 Leave a section out if the user has no answer for it yet. An empty heading is not
 a convention. Keep each rule an instruction, followed by its reason. **Don't restate
-the journal rules from `record` here.** A copy is one more place that goes stale.
+the journal, decision or follow-up rules from `record` here.** A copy is one more place
+that goes stale.
 
 If `docs/Conventions.md` already exists, don't rewrite it. Offer only the additions the
 survey turned up.
@@ -167,10 +176,12 @@ judge whether it belongs in the repo.
 
 ## 7. Record the setup
 
-Load `/docs-vault:record`, then write today's journal entry the way it describes. It should have a `##` title in
-the past tense, a line of prose on what was set up, and a `### #decision` block for each
-real choice made in step 4, with its reason. Put anything left for later, such as
-conventions the user wants to settle once the project grows, in a `### #todo` block.
+Load `/docs-vault:record`, then write today's journal the way it describes. Keep it short:
+a `## Summary` with a bullet or two on what was set up, not one per answer the user gave.
+Write a decision note only for a choice from step 4 whose reason will matter later, such
+as a layout rule the project commits to, and link it under `## Decisions`. Put anything
+left for later, such as conventions the user wants to settle once the project grows,
+under `## Follow-ups` as plain checkboxes.
 
 ## 8. Hand over
 

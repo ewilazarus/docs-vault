@@ -9,8 +9,16 @@
 #   - docs/.obsidian/ holds Obsidian's settings, not notes, so it is left alone;
 #   - reading docs/ without `recall` loaded adds a reminder to load it;
 #   - writing docs/ without `record` (or `init`) loaded is denied;
-#   - editing a past journal day is denied unless the only changes tick `- [ ]` boxes or
-#     re-point a wikilink while keeping its displayed text.
+#   - today's journal day, and decisions dated today, may be rewritten freely;
+#   - a past journal day, or a decision dated before today, may only change the state of
+#     its checkboxes or re-point a wikilink while keeping its displayed text;
+#   - a new journal day or decision must be dated today, and a future journal day can't be
+#     written at all.
+#
+# The history check enforces the shape of a change (only checkbox state and link targets
+# move), not its meaning: it doesn't know whether a box sits under `## Follow-ups`. The
+# todos script applies those semantics. The hook only sees Claude's file tools, so shell
+# commands stay an escape hatch that needs the same trust as before.
 #
 # Needs jq. Anything unexpected fails open: the tool call goes through and the error is
 # reported as a non-blocking hook error. Written for bash 3.2, which macOS still ships.
@@ -43,6 +51,10 @@ state_key=$(printf '%s--%s' "$session" "$agent" | tr -c 'A-Za-z0-9_.-' '_')
 
 # `docs-vault:record`, `/docs-vault:record`, `docs-vault:docs-vault-record` or
 # `docs-vault-record` -> `record`.
+#
+# Rewriting history (backdated decisions, past journal prose) is meant for a dedicated
+# backfill skill only. When it exists, give it its own name here and its own narrow rules
+# below, applied only while it is loaded. Don't relax the rules for `record`.
 skill_from() {
   case "${1#/}" in
     docs-vault:recall | docs-vault:docs-vault-recall | docs-vault-recall) echo recall ;;
@@ -103,32 +115,37 @@ vault_relative() {
   esac
 }
 
-# --- the past-entry check ----------------------------------------------------------------
+# --- the history check -------------------------------------------------------------------
 
-# Reads the hook input on stdin, with the day file's current text as $current. Prints the
-# problem, or nothing when every change only ticks boxes or re-points links.
-past_entry_problem() {
+# Reads the hook input on stdin, with the file's current text as $current. Prints the
+# problem, or nothing when every change only flips checkboxes or re-points links. A box
+# may go either way, `[ ]` to `[x]` or back, at any nesting depth, but its text may not.
+history_problem() {
   local current=$1
   jq -r --arg current "$current" '
     # [[target|shown]] -> [[shown]], so re-pointing a link while keeping its text is no change.
     def links: gsub("\\[\\[[^\\]|]+\\|(?<s>[^\\]]+)\\]\\]"; "[[\(.s)]]");
-    def unboxed: gsub("- \\[[ xX]\\]"; "- [ ]");
-    def boxes: [scan("- \\[([ xX])\\]") | .[0]];
-    def allowed($old; $new):
-      ($old | links) as $o | ($new | links) as $n
-      | ($o | unboxed) == ($n | unboxed)
-        and ([($o | boxes), ($n | boxes)] | transpose | all(.[0] == " " or .[1] != " "));
+    def unboxed: gsub("(?<b>[-*+]) \\[[ xX]\\]"; "\(.b) [ ]");
+    def allowed($old; $new): ($old | links | unboxed) == ($new | links | unboxed);
 
     if .tool_name == "Write" then
-      if $current == "" then "New entries go in today'"'"'s file, not a past day'"'"'s."
-      elif allowed($current; .tool_input.content // "") then empty
-      else "This rewrite changes more than boxes and links." end
+      if allowed($current; .tool_input.content // "") then empty
+      else "This rewrite changes more than checkboxes and links." end
     else
       (if .tool_name == "MultiEdit" then .tool_input.edits else [.tool_input] end)
       | if all(.[]; allowed(.old_string // ""; .new_string // "")) then empty
-        else "This edit changes more than boxes and links." end
+        else "This edit changes more than checkboxes and links." end
     end
   ' <<<"$input"
+}
+
+# Sets $current to the file's text, trailing newlines included, or to nothing when it
+# doesn't exist.
+load_current() {
+  current=""
+  [ -f "$project/docs/$1" ] || return 0
+  current=$(cat "$project/docs/$1"; printf x)
+  current=${current%x}
 }
 
 # --- dispatch ----------------------------------------------------------------------------
@@ -157,12 +174,36 @@ esac
 loaded record || loaded init ||
   deny "Writes to docs/ go through the record skill. Load /docs-vault:record, then retry this change."
 
+today=$(date +%F)
+
+# Journal/YYYY-MM-DD.md: today's day is a memo that converges during the day. A past day
+# is history: only its checkbox state and link targets may change. A future day isn't
+# history yet, and planning belongs in the project's own notes.
 day=$(printf '%s\n' "$rel" | sed -n 's#^Journal/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)\.md$#\1#p')
-if [ -n "$day" ] && [[ "$day" < "$(date +%F)" ]]; then
-  current=""
-  [ -f "$project/docs/$rel" ] && current=$(cat "$project/docs/$rel"; printf x) && current=${current%x}
-  problem=$(past_entry_problem "$current")
-  [ -z "$problem" ] ||
-    deny "Journal/$day.md is a past day. $problem The only edits a past entry gets are ticking a \`- [ ]\` box or re-pointing a broken [[link]] while keeping its displayed text. Write anything else in today's entry, and say which earlier entry it corrects."
+if [ -n "$day" ] && [[ "$day" > "$today" ]]; then
+  deny "Journal/$day.md is in the future. The journal records what happened, so write in today's day file, Journal/$today.md, and put plans in the project's notes."
 fi
+if [ -n "$day" ] && [[ "$day" < "$today" ]]; then
+  [ -f "$project/docs/$rel" ] ||
+    deny "Journal/$day.md is a past day, and new history goes in today's day file, Journal/$today.md."
+  load_current "$rel"
+  problem=$(history_problem "$current")
+  [ -z "$problem" ] ||
+    deny "Journal/$day.md is a past day. $problem A past day's prose is history: the only edits it gets are ticking or unticking a box (without touching its text) or re-pointing a broken [[link]] while keeping its displayed text. Write anything new in today's day file, Journal/$today.md."
+fi
+
+# Decisions/YYYY-MM-DD-NN-short-slug.md: a new decision is dated today, and stays editable
+# for the day. After that it is historical rationale, and a changed mind is a new decision.
+case "$rel" in
+  Decisions/*.md)
+    dated=$(printf '%s\n' "$rel" | sed -n 's#^Decisions/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)-[0-9][0-9]-[^/]\{1,\}\.md$#\1#p')
+    [ "$dated" = "$today" ] && exit 0
+    [ -f "$project/docs/$rel" ] ||
+      deny "New decisions are named Decisions/$today-NN-short-slug.md: today's date, then 01, 02 and so on in the order they're made today, then a short slug."
+    load_current "$rel"
+    problem=$(history_problem "$current")
+    [ -z "$problem" ] ||
+      deny "$rel is a recorded decision. $problem Decisions keep the rationale as it was when the choice was made. If the project changed direction, create a new decision in Decisions/ that links to this one, and update the notes that describe the current state."
+    ;;
+esac
 exit 0

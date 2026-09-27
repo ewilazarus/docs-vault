@@ -31,6 +31,8 @@ section. Useful defaults:
   `Conventions.md`. Match them with `file:Home OR file:Conventions`.
 - **A muted grey for `Journal/`.** The journal links to everything and would otherwise
   dominate the graph.
+- **A colour of its own for `Decisions/`,** so the choices stand out among the notes they
+  link to.
 - **A split within a folder where it means something,** such as core concepts versus
   the layers built on them. Match those notes by name.
 
@@ -48,6 +50,7 @@ graph settings. Create the file if it doesn't exist.
 "colorGroups": [
   { "query": "file:Home OR file:Conventions", "color": { "a": 1, "rgb": 16098851 } },
   { "query": "path:Journal", "color": { "a": 1, "rgb": 9080728 } },
+  { "query": "path:Decisions", "color": { "a": 1, "rgb": 14059590 } },
   { "query": "path:Concepts", "color": { "a": 1, "rgb": 5016565 } }
 ]
 ```

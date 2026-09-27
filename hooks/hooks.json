@@ -1,5 +1,5 @@
 {
-  "description": "Route work on docs/ through the recall and record skills, and keep past journal entries append-only.",
+  "description": "Route work on docs/ through the recall and record skills, and keep past journal days and decisions unchanged except for checkbox state and link targets.",
   "hooks": {
     "PreToolUse": [
       {

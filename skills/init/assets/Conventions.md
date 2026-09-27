@@ -2,8 +2,8 @@
 description: "How this vault is organised, and the rules that bind work on this project."
 ---
 <!--
-The docs-vault skills fix only the journal and its #decision and #todo tags. Everything
-else is defined here. Delete the sections you don't need, and this comment too.
+docs-vault owns Journal/ and Decisions/. Everything else in this vault is defined here.
+Delete the sections you don't need, and this comment too.
 -->
 
 ## Layout
@@ -16,7 +16,7 @@ How notes are named, which frontmatter they carry, and which templates to start 
 
 ## Tags and callouts
 
-Any tags or callout types beyond the journal's `#decision` and `#todo`, and where they go.
+Any tags or callout types the project uses, and where they go.
 
 ## Rules
 

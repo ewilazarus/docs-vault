@@ -1,13 +1,16 @@
 ---
 name: todos
-description: List every open todo in this project's docs/ journal as a table, with the day it was raised, its #todo block, its text and its sub-items, and recommend the easiest one to do next. Use when the user runs /docs-vault:todos or asks what's open, what's left, what to pick up next, or for the TODO list or backlog.
+description: List every open follow-up in this project's docs/ journal as a table, with the day it was raised, its text and its sub-items, and recommend the easiest one to do next. Use when the user runs /docs-vault:todos or asks what's open, what's left, what to pick up next, or for the TODO list or backlog.
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/todos.sh), Read, Grep, Glob, Bash(rg *), Bash(fd *)
 ---
 
-# Open todos
+# Open follow-ups
 
-A script has already collected the open todos from `docs/Journal/`. Every unticked
-top-level `- [ ]` box is one row, oldest first. Here is its output:
+There is no todo store. The TODO list is derived from the journal: every unticked top-level
+`- [ ]` box under a `## Follow-ups` heading in `docs/Journal/` is one row, oldest day first,
+in the order the boxes appear. Nested boxes are that row's sub-items, and boxes anywhere
+else are ordinary checklists. A script has already collected them, so the list doesn't
+depend on judgement. Here is its output:
 
 !`${CLAUDE_SKILL_DIR}/scripts/todos.sh`
 
@@ -18,15 +21,19 @@ it. Don't reorder, merge, reword, shorten or drop rows, and don't add any from m
 list is deterministic so that it can be trusted. If the output says there is no journal, or
 nothing is open, say so and stop.
 
+Rows marked *legacy* come from day files written before Follow-ups sections, which kept open
+work in `### #todo` blocks. They are open work like any other.
+
 ## 2. Recommend the next low-hanging fruit
 
 After the table, recommend **one** item, by its `#`, as the best one to pick up next. You
 may name a runner-up. Judge from the row itself, and if you need more, read the day file it
-came from or the note it links. Don't run anything that changes the system.
+came from, where the Summary above the box says why it was left open, or the note it links.
+Don't run anything that changes the system.
 
 Prefer an item that is:
 
-- **Unblocked.** Drop anything "waiting on" a person, an upstream change or another todo.
+- **Unblocked.** Drop anything "waiting on" a person, an upstream change or another item.
 - **Concrete.** It has a clear next action or a checkable outcome.
 - **Small.** It needs few steps, or has only one or two unticked sub-items left.
 - **Low-risk.** It doesn't take a running system down or need a sign-off.
@@ -38,6 +45,6 @@ which item is closest and what it is waiting on.
 
 ## 3. Stop
 
-Don't start the work or tick any box. Wait for the user to pick. Closing a todo is the
-`record` skill's job: tick the box in its day file, write what happened in today's entry,
-and rewrite any note whose facts changed.
+Don't start the work or tick any box. Wait for the user to pick. Finishing a follow-up is
+the `record` skill's job: tick the box in the day that raised it, mention it in today's
+journal if finishing it was meaningful, and rewrite any note whose facts changed.

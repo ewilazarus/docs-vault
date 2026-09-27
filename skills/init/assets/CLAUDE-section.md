@@ -7,5 +7,6 @@ conventions are in `docs/Conventions.md`.
 - Before work the vault documents, or before answering how or why something is the way
   it is, load `/docs-vault:recall`.
 - Before calling work done, load `/docs-vault:record` if you changed something outside
-  the repo, made a call worth keeping, left something open, or found a note wrong.
+  the repo, made a choice whose reason matters later, left work unfinished, or found a
+  note wrong. Routine code changes that git explains need no record.
 <!-- docs-vault:end -->
