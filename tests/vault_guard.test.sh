@@ -183,6 +183,26 @@ check "re-pointing a link in an old decision" allow \
 check "a superseding decision is a new file" allow \
   "$(write_file "Decisions/$today-02-use-sqlite.md" $'# Use SQLite\n\n## Related\n\n- Supersedes [[Decisions/2020-01-01-01-use-postgres|Use Postgres]]\n')"
 
+echo "vault_guard.sh: section references"
+
+check "a bare section reference is denied" deny \
+  "$(write_file Notes.md "Specified in Spec §4.2.")"
+check "a heading link to a section" allow \
+  "$(write_file Notes.md "Specified in [[Spec#4.2 Assertion|Spec §4.2]].")"
+check "an escaped heading link in a table" allow \
+  "$(write_file Notes.md "| field | [[#2.6 Repository IDs\\|§2.6]] |")"
+check "a Markdown link to an outside section" allow \
+  "$(write_file Notes.md "See [RFC 8949 §4.2.1](https://www.rfc-editor.org/rfc/rfc8949#section-4.2.1).")"
+check "a reference in code" allow \
+  "$(write_file Notes.md $'Use `§4` literally.\n\n```\nsee §53\n```\n')"
+printf 'Legacy text, see §7.\n' >"$docs/Legacy.md"
+check "editing near an existing bare reference" allow \
+  "$(edit_file Legacy.md "Legacy text, see §7." "Legacy notes, see §7.")"
+check "adding one to a file that has some is denied" deny \
+  "$(edit_file Legacy.md "Legacy text, see §7." "Legacy text, see §7 and §8.")"
+check "a bare reference in today's journal is denied" deny \
+  "$(edit_file "Journal/$today.md" "## Summary" $'## Summary\n\n- Settled §7.')"
+
 echo "vault_guard.sh: failing open"
 
 out=$(printf 'not json' | "$BASH" "$guard" 2>/dev/null) && status=0 || status=$?

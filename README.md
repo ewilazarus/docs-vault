@@ -116,6 +116,9 @@ Claude remembering to load them:
 - **Decisions** are created as `Decisions/<today>-NN-slug.md`. One may be refined on the day
   it was made. After that, the same rule as a past journal day applies, because a changed
   mind is a new decision.
+- **Section references** are links. A write that adds a bare `§4.2` outside a link or code
+  is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References
+  already in a file don't count, so old notes can still be edited.
 
 The past-day check enforces the *shape* of a change, not its meaning. It lets any
 checkbox's state change, and nothing else, without parsing Markdown to prove the box sits

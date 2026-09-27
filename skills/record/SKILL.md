@@ -80,6 +80,13 @@ notes in place when that changes.
 - **No open work in a note.** A note may state a present fact ("the nightly export fails
   on large inputs"). "Not done yet" is a follow-up in today's journal.
 - **Link from the journal to a note** when the Summary describes a change it now reflects.
+- **Point at the exact place, with a link.** Link a section of a note with a heading link
+  that keeps the reference as its text: `[[Spec#4.2 Assertion|Spec §4.2]]`, or
+  `[[#4.2 Assertion|§4.2]]` within the same note. Never leave a bare `§4.2`, "RFC-0001
+  §69", "see the section below" or "the entry above", because they break silently when the
+  note is reorganised, and a link shows up in backlinks. Inside a table, escape the pipe
+  as `\|`. A section of an outside document gets a Markdown link to its URL. The hook
+  refuses a change that adds a bare `§` reference.
 
 Don't restructure existing notes to fit a convention unless the user asks.
 

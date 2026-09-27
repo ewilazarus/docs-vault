@@ -9,6 +9,7 @@
 #   - docs/.obsidian/ holds Obsidian's settings, not notes, so it is left alone;
 #   - reading docs/ without `recall` loaded adds a reminder to load it;
 #   - writing docs/ without `record` (or `init`) loaded is denied;
+#   - a write that adds a bare section reference (`§4.2`) outside a link or code is denied;
 #   - today's journal day, and decisions dated today, may be rewritten freely;
 #   - a past journal day, or a decision dated before today, may only change the state of
 #     its checkboxes or re-point a wikilink while keeping its displayed text;
@@ -139,6 +140,24 @@ history_problem() {
   ' <<<"$input"
 }
 
+# Reads the hook input on stdin, with the file's current text as $current. Prints the
+# problem when the change adds a bare section reference such as `§4.2`, outside a link or
+# code. References already in the file don't count, so an old line can still be edited.
+bare_section_problem() {
+  local current=$1
+  jq -r --arg current "$current" '
+    def bare: gsub("(?s)```.*?```"; "") | gsub("`[^`\n]*`"; "")
+      | gsub("\\[\\[[^\\]]*\\]\\]"; "") | gsub("\\[[^\\]]*\\]\\([^)]*\\)"; "")
+      | [match("§ ?[0-9]"; "g")] | length;
+
+    (if .tool_name == "Write" then [{old_string: $current, new_string: .tool_input.content}]
+     elif .tool_name == "MultiEdit" then .tool_input.edits
+     else [.tool_input] end)
+    | if any(.[]; (.new_string // "" | bare) > (.old_string // "" | bare))
+      then "This change adds a bare section reference such as §4.2." else empty end
+  ' <<<"$input"
+}
+
 # Sets $current to the file's text, trailing newlines included, or to nothing when it
 # doesn't exist.
 load_current() {
@@ -175,6 +194,12 @@ loaded record || loaded init ||
   deny "Writes to docs/ go through the record skill. Load /docs-vault:record, then retry this change."
 
 today=$(date +%F)
+
+# Everywhere in the vault: a section reference is a heading link, never a bare `§N`.
+load_current "$rel"
+problem=$(bare_section_problem "$current")
+[ -z "$problem" ] ||
+  deny "$problem Obsidian can link to the section itself, so write it as a heading link that keeps the number as its text, for example [[Spec#4.2 Assertion|Spec §4.2]], or [[#4.2 Assertion|§4.2]] within the same note, and escape the | as \\| inside a table. Link a section in an outside document with a Markdown link to its URL."
 
 # Journal/YYYY-MM-DD.md: today's day is a memo that converges during the day. A past day
 # is history: only its checkbox state and link targets may change. A future day isn't
