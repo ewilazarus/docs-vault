@@ -10,11 +10,12 @@
 #   - reading docs/ without `recall` loaded adds a reminder to load it;
 #   - writing docs/ without `record` (or `init`) loaded is denied;
 #   - a write that adds a bare section reference (`§4.2`) outside a link or code is denied;
-#   - today's journal day, and decisions dated today, may be rewritten freely;
+#   - today's journal day, and decisions whose `date:` is today, may be rewritten freely;
 #   - a past journal day, or a decision dated before today, may only change the state of
 #     its checkboxes or re-point a wikilink while keeping its displayed text;
-#   - a new journal day or decision must be dated today, and a future journal day can't be
-#     written at all.
+#   - a new journal day must be dated today, and a future journal day can't be written at
+#     all;
+#   - a new decision takes the next number, `Decisions/NNNNN-slug.md`, with `date:` today.
 #
 # The history check enforces the shape of a change (only checkbox state and link targets
 # move), not its meaning: it doesn't know whether a box sits under `## Follow-ups`. The
@@ -217,15 +218,28 @@ if [ -n "$day" ] && [[ "$day" < "$today" ]]; then
     deny "Journal/$day.md is a past day. $problem A past day's prose is history: the only edits it gets are ticking or unticking a box (without touching its text) or re-pointing a broken [[link]] while keeping its displayed text. Write anything new in today's day file, Journal/$today.md."
 fi
 
-# Decisions/YYYY-MM-DD-NN-short-slug.md: a new decision is dated today, and stays editable
-# for the day. After that it is historical rationale, and a changed mind is a new decision.
+# Decisions/NNNNN-short-slug.md: numbered across the vault, with the day it was made in its
+# `date:` frontmatter. A new decision takes the next number and is dated today, and stays
+# editable for the day. After that it is historical rationale, and a changed mind is a new
+# decision.
 case "$rel" in
   Decisions/*.md)
-    dated=$(printf '%s\n' "$rel" | sed -n 's#^Decisions/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)-[0-9][0-9]-[^/]\{1,\}\.md$#\1#p')
-    [ "$dated" = "$today" ] && exit 0
-    [ -f "$project/docs/$rel" ] ||
-      deny "New decisions are named Decisions/$today-NN-short-slug.md: today's date, then 01, 02 and so on in the order they're made today, then a short slug."
+    if [ ! -f "$project/docs/$rel" ]; then
+      number=$(printf '%s\n' "$rel" | sed -n 's#^Decisions/\([0-9]\{5\}\)-[a-z0-9][a-z0-9-]*\.md$#\1#p')
+      highest=$(find "$project/docs/Decisions" -maxdepth 1 -name '[0-9][0-9][0-9][0-9][0-9]-*.md' 2>/dev/null |
+        sed 's#.*/\([0-9]\{5\}\)-.*#\1#' | sort | tail -n 1)
+      next=$(printf '%05d' $((10#${highest:-0} + 1)))
+      [ -n "$number" ] ||
+        deny "New decisions are named Decisions/NNNNN-short-slug.md: the next number across Decisions/, $next, then a short lowercase slug."
+      [ $((10#$number)) -gt $((10#${highest:-0})) ] ||
+        deny "Decision numbers are never reused or filled in. The next one is $next."
+      content=$(jq -r '.tool_input.content // ""' <<<"$input")
+      printf '%s\n' "$content" | grep -qx "date: $today" ||
+        deny "A new decision carries \`date: $today\` in its frontmatter: decisions are recorded on the day they're made."
+      exit 0
+    fi
     load_current "$rel"
+    printf '%s' "$current" | grep -qx "date: $today" && exit 0
     problem=$(history_problem "$current")
     [ -z "$problem" ] ||
       deny "$rel is a recorded decision. $problem Decisions keep the rationale as it was when the choice was made. If the project changed direction, create a new decision in Decisions/ that links to this one, and update the notes that describe the current state."

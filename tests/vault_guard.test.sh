@@ -33,7 +33,7 @@ description: "Reworked backups."
 * [x] Rotate the keys.
 EOF
 
-cat >"$docs/Decisions/$past-01-use-postgres.md" <<'EOF'
+cat >"$docs/Decisions/00001-use-postgres.md" <<'EOF'
 ---
 description: "Store data in Postgres."
 date: 2020-01-01
@@ -153,7 +153,7 @@ check "changing task text while ticking is denied" deny \
 check "adding a follow-up to a past day is denied" deny \
   "$(edit_file "Journal/$past.md" "* [x] Rotate the keys." $'* [x] Rotate the keys.\n- [ ] Rotate them again.')"
 check "adding a decision link to a past day is denied" deny \
-  "$(edit_file "Journal/$past.md" "## Follow-ups" $'## Decisions\n\n- [[Decisions/2020-01-01-01-use-postgres|Use Postgres]]\n\n## Follow-ups')"
+  "$(edit_file "Journal/$past.md" "## Follow-ups" $'## Decisions\n\n- [[Decisions/00001-use-postgres|Use Postgres]]\n\n## Follow-ups')"
 check "re-pointing a past link while keeping its text" allow \
   "$(edit_file "Journal/$past.md" "See [[Backups]]." "See [[Runbooks/Backups|Backups]].")"
 
@@ -167,21 +167,36 @@ check "rewriting a whole past day with a new line is denied" deny \
 
 echo "vault_guard.sh: decisions"
 
-check "creating a decision dated today" allow \
-  "$(write_file "Decisions/$today-01-authorization-lives-in-middleware.md" "# Authorization lives in middleware")"
-check "creating a decision without the dated name is denied" deny \
-  "$(write_file "Decisions/authorization-lives-in-middleware.md" "# x")"
-check "creating a backdated decision is denied" deny \
-  "$(write_file "Decisions/2020-01-02-01-use-sqlite.md" "# Use SQLite")"
-printf '# Authorization lives in middleware\n' >"$docs/Decisions/$today-01-authorization-lives-in-middleware.md"
+decision() { printf -- '---\ndescription: "%s"\ndate: %s\n---\n\n# %s\n' "$1" "$2" "$1"; }
+
+check "creating the next decision, dated today" allow \
+  "$(write_file "Decisions/00002-authorization-lives-in-middleware.md" "$(decision "Authorization lives in middleware" "$today")")"
+check "creating a decision with a dated name is denied" deny \
+  "$(write_file "Decisions/$today-01-authorization.md" "$(decision "Authorization" "$today")")"
+check "creating a decision without a number is denied" deny \
+  "$(write_file "Decisions/authorization-lives-in-middleware.md" "$(decision "x" "$today")")"
+check "creating a decision without today's date is denied" deny \
+  "$(write_file "Decisions/00002-use-sqlite.md" "$(decision "Use SQLite" 2020-01-02)")"
+check "creating a decision without a date is denied" deny \
+  "$(write_file "Decisions/00002-use-sqlite.md" "# Use SQLite")"
+check "reusing a decision number is denied" deny \
+  "$(write_file "Decisions/00001-use-sqlite.md" "$(decision "Use SQLite" "$today")")"
+decision "Authorization lives in middleware" "$today" >"$docs/Decisions/00002-authorization-lives-in-middleware.md"
+check "filling in a lower number is denied" deny \
+  "$(write_file "Decisions/00001-use-sqlite.md" "$(decision "Use SQLite" "$today")")"
 check "refining a decision made today" allow \
-  "$(edit_file "Decisions/$today-01-authorization-lives-in-middleware.md" "# Authorization lives in middleware" $'# Authorization lives in middleware\n\n## Why\n\nNested routes.')"
+  "$(edit_file "Decisions/00002-authorization-lives-in-middleware.md" "# Authorization lives in middleware" $'# Authorization lives in middleware\n\n## Why\n\nNested routes.')"
 check "rewriting an old decision's rationale is denied" deny \
-  "$(edit_file "Decisions/$past-01-use-postgres.md" "The team already runs it." "SQLite turned out simpler.")"
+  "$(edit_file "Decisions/00001-use-postgres.md" "The team already runs it." "SQLite turned out simpler.")"
+check "re-dating an old decision to today is denied" deny \
+  "$(edit_file "Decisions/00001-use-postgres.md" "date: 2020-01-01" "date: $today")"
 check "re-pointing a link in an old decision" allow \
-  "$(edit_file "Decisions/$past-01-use-postgres.md" "[[Databases]]" "[[Reference/Databases|Databases]]")"
+  "$(edit_file "Decisions/00001-use-postgres.md" "[[Databases]]" "[[Reference/Databases|Databases]]")"
 check "a superseding decision is a new file" allow \
-  "$(write_file "Decisions/$today-02-use-sqlite.md" $'# Use SQLite\n\n## Related\n\n- Supersedes [[Decisions/2020-01-01-01-use-postgres|Use Postgres]]\n')"
+  "$(write_file "Decisions/00003-use-sqlite.md" "$(decision "Use SQLite" "$today")
+## Related
+
+- Supersedes [[Decisions/00001-use-postgres|Use Postgres]]")"
 
 echo "vault_guard.sh: section references"
 

@@ -8,7 +8,7 @@ the vault three kinds of durable project memory:
 - **`Journal/`: what meaningful things happened.** One curated memo per day,
   `Journal/YYYY-MM-DD.md`.
 - **`Decisions/`: why important choices were made.** One short note per choice,
-  `Decisions/YYYY-MM-DD-NN-short-slug.md`.
+  `Decisions/NNNNN-short-slug.md`, numbered across the vault and dated in its frontmatter.
 
 Git records exactly what changed in the repo. Raw AI activity, meaning the commands run, the
 files touched, the tests rerun and the approaches tried, is not project memory, so the vault
@@ -35,7 +35,7 @@ description: "Reworked authentication and settled on middleware authorization."
 
 ## Decisions
 
-- [[Decisions/2026-09-27-01-authorization-lives-in-middleware|Authorization lives in middleware]]
+- [[Decisions/00012-authorization-lives-in-middleware|Authorization lives in middleware]]
 
 ## Follow-ups
 
@@ -113,8 +113,8 @@ Claude remembering to load them:
   too. Today's day file may be rewritten freely. A future day can't be written at all:
   the journal records what happened, and plans belong in the project's notes. "Today" is
   the machine's local date, so work recorded after midnight goes in the new day's file.
-- **Decisions** are created as `Decisions/<today>-NN-slug.md`. One may be refined on the day
-  it was made. After that, the same rule as a past journal day applies, because a changed
+- **Decisions** are created as `Decisions/NNNNN-slug.md`, taking the next number, with
+  `date:` set to today in their frontmatter. One may be refined on the day it was made. After that, the same rule as a past journal day applies, because a changed
   mind is a new decision.
 - **Section references** are links. A write that adds a bare `§4.2` outside a link or code
   is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References

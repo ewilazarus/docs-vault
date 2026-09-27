@@ -26,7 +26,7 @@ organised before assuming anything.
   organises them, hold **what is true now**.
 - **`Journal/YYYY-MM-DD.md`** holds **what meaningful things happened** each day, and the
   work left open.
-- **`Decisions/YYYY-MM-DD-NN-slug.md`** holds **why an important choice was made**, one
+- **`Decisions/NNNNN-slug.md`** holds **why an important choice was made**, one
   choice per note.
 - **Git** holds exactly what changed in the repo. What the agent ran or tried is kept
   nowhere, on purpose.

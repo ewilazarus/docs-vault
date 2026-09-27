@@ -110,7 +110,7 @@ description: "Reworked authentication and settled on middleware authorization."
 
 ## Decisions
 
-- [[Decisions/2026-09-27-01-authorization-lives-in-middleware|Authorization lives in middleware]]
+- [[Decisions/00012-authorization-lives-in-middleware|Authorization lives in middleware]]
 
 ## Follow-ups
 
@@ -223,9 +223,11 @@ Renaming, moving a helper, picking between equivalent idioms, fixing a typo or c
 the obvious API is not a decision note. If it needs saying at all, a clause in the Summary
 is enough.
 
-Name it `Decisions/YYYY-MM-DD-NN-short-slug.md`: today's date, then `NN` counting from `01`
-in the order today's decisions were made (check `Decisions/` for today's highest), then a
-short lowercase slug.
+Name it `Decisions/NNNNN-short-slug.md`: the next five-digit number across `Decisions/`
+(one more than the highest there, starting at `00001`), then a short lowercase slug.
+Numbers are never reused, even when a decision is deleted. The date doesn't go in the
+name, because the journal that links the decision already dates it; it goes in the
+`date:` frontmatter, which is required.
 
 ```markdown
 ---
@@ -251,11 +253,11 @@ cleanly with nested routes.
   `## Context`, `## Consequences` or `## Related` only when they add something. There is
   no status, owner, approver, priority, review date or scoring of alternatives.
 - **Link it from today's journal** under `## Decisions`, with an aliased wikilink:
-  `[[Decisions/2026-09-27-01-authorization-lives-in-middleware|Authorization lives in middleware]]`.
+  `[[Decisions/00012-authorization-lives-in-middleware|Authorization lives in middleware]]`.
 - **A decision records rationale, not current state.** The notes say what is true now, and
   they get rewritten. A decision made today may be refined today. After that it stays as
   it was written, even when the project changes direction. Then write a new decision,
-  link the old one from its Related section (`- Supersedes [[Decisions/2026-08-10-01-use-postgres|Use Postgres]]`),
+  link the old one from its Related section (`- Supersedes [[Decisions/00004-use-postgres|Use Postgres]]`),
   rewrite the notes the change affects, and summarise the change in today's journal.
 
 ## If the vault isn't set up
