@@ -172,7 +172,27 @@ Markdown, Bases and CLI know-how.
 
 ## Install in a project
 
-Interactively, from any project:
+In one command, with the `claude` CLI on your PATH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ewilazarus/docs-vault/main/bootstrap.sh | bash
+```
+
+It adds both marketplaces and installs `docs-vault` for you, in every project, bringing
+kepano's `obsidian` plugin along. Run it again to update. Add `-s -- --project`, from a
+project's root, to declare the plugins in that project's `.claude/settings.json` instead,
+so everyone who opens it is offered them. To read the script before running it:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/ewilazarus/docs-vault/main/bootstrap.sh
+less bootstrap.sh
+bash bootstrap.sh --dry-run    # prints the commands without running them
+bash bootstrap.sh
+```
+
+Then restart Claude Code and run `/docs-vault:init` in the project.
+
+Or interactively, from any project:
 
 ```
 /plugin marketplace add kepano/obsidian-skills

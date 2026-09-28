@@ -22,7 +22,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}, ${{ matrix.bash }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Tool versions
         run: |
           jq --version
