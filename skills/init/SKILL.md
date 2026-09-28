@@ -2,6 +2,7 @@
 name: init
 description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal and the decisions folder, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/init.sh *)
 ---
 
 # Bootstrap the docs vault
@@ -13,87 +14,92 @@ else is defined by the `Conventions.md` you write here, together with the user.
 
 **Never overwrite or move an existing file.** Where something already exists, adopt it,
 report it, and move on. The one exception is the marked docs-vault section in `CLAUDE.md`,
-which this skill owns and may replace. Do the steps in order. Show the user the plan from step 1 before
-you change anything.
+which this skill owns and may replace. Do the steps in order.
 
-**Create files with the Write tool, not shell redirection.** Write refuses to replace a
-file you haven't read, which enforces the rule above. Permission checks also treat a
-heredoc or `>` into the project as a possible overwrite, and may block it.
+A bundled script makes every mechanical change: the project's settings, the folders, the
+Daily notes setting, the `CLAUDE.md` section and `.gitignore`. It only adds what is
+missing, keeps any value that is already set differently and says so, and changes nothing
+on a second run. Don't make those edits by hand.
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/init.sh plan  [--agents-md import|append] [--ignore-plugins]
+${CLAUDE_SKILL_DIR}/scripts/init.sh apply [--agents-md import|append] [--ignore-plugins]
+```
+
+Run it from the project root.
 
 ## 1. Survey what exists
-
-From the project root:
 
 ```bash
 ls -la docs/ docs/.obsidian docs/Journal docs/Decisions 2>&1 | head -40
 test -f docs/Conventions.md && sed -n '1,40p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
-cat .claude/settings.json 2>/dev/null
-cat .gitignore 2>/dev/null | grep -n obsidian
-ls CLAUDE.md .claude/CLAUDE.md AGENTS.md 2>/dev/null
-grep -n 'docs-vault:start' CLAUDE.md .claude/CLAUDE.md AGENTS.md 2>/dev/null
 git rev-parse --is-inside-work-tree 2>/dev/null || echo "not a git repo"
 pgrep -xq Obsidian && echo "Obsidian is running"
+${CLAUDE_SKILL_DIR}/scripts/init.sh plan
 ```
 
-Report what is already in place and what this run would add. If `docs/` already holds
-notes, the conventions describe *those notes as they are*. Don't propose restructuring them
-here. That is a separate job, and only if the user asks.
+If `docs/` already holds notes, the conventions describe *those notes as they are*. Don't
+propose restructuring them here. That is a separate job, and only if the user asks.
 
-## 2. Offer the plugins to everyone on the project
+## 2. Show the plan and settle its choices
 
-`docs-vault` depends on kepano's `obsidian` plugin, from the `obsidian-skills` marketplace,
-and Claude Code installs it along with `docs-vault`. It only does that from a marketplace
-that is already added, so the project should declare both. Then anyone who opens the
-project is offered the plugins. If `.claude/settings.json` doesn't already have these keys,
-merge them in, keeping everything else the file contains:
+Show the user the plan's output, and explain each part in plain words:
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "obsidian-skills": {
-      "source": { "source": "github", "repo": "kepano/obsidian-skills" }
-    },
-    "docs-vault": {
-      "source": { "source": "github", "repo": "ewilazarus/docs-vault" }
-    }
-  },
-  "enabledPlugins": {
-    "obsidian@obsidian-skills": true,
-    "docs-vault@docs-vault": true
-  }
-}
-```
+- **`.claude/settings.json`** offers both plugins to everyone who opens the project.
+  `docs-vault` depends on kepano's `obsidian` plugin, and Claude Code only installs a
+  dependency from a marketplace already added, so both marketplaces are declared. Plugins
+  load at session start, so others get them in their next session. A `kept` line is a
+  plugin someone set on purpose, such as one disabled for this project. Leave it that way
+  unless the user says otherwise.
+- **`docs/Journal/` and `docs/Decisions/`.** Don't create a folder for todos or tasks.
+  Open work is a plain checkbox under a `## Follow-ups` heading in the journal day where it
+  came up, and `/docs-vault:todos` lists it from there.
+- **`daily-notes.json`** appears only when the Daily notes core plugin is on. It points new
+  daily notes at the journal. If the plan says it `kept` another folder, ask whether to
+  change it, and if so edit that one key yourself.
+- **The `CLAUDE.md` section,** from this skill's `assets/CLAUDE-section.md`. Hooks only fire
+  when Claude touches `docs/`, and skills only load when a request matches them. This
+  section covers what neither catches: work that changes something the vault documents
+  without ever opening `docs/`. It names the skills and nothing else. **Don't add the
+  skills' rules or the project's conventions to it.** They live in the skills and in
+  `docs/Conventions.md`, and a copy here would go stale while loading into every session.
+- **`.gitignore`** keeps each user's own Obsidian settings out of git: their open panes,
+  the graph view's settings, their editor preferences such as the default view mode, and
+  their theme and fonts. Obsidian rewrites these whenever someone clicks around, zooms the
+  graph or changes a preference, so they'd churn on every commit, and they aren't the
+  project's to set. Graph colours stay per-user as a result, and `/docs-vault:graph` sets
+  them for whoever runs it. Say what the lines hold rather than just naming "Obsidian
+  files": a user who doesn't know what's in `.obsidian/` can't judge them.
 
-Plugins load at session start, so tell the user the change takes effect for others on
-their next session.
+Two choices change the plan. Ask them together:
 
-## 3. Create the journal and the decisions folder
+- **`CLAUDE.md: needs a choice`** means the project has `AGENTS.md` and no `CLAUDE.md`.
+  Creating a `CLAUDE.md` makes Claude Code stop reading `AGENTS.md` on its own, so either
+  create one that imports it (`--agents-md import`) or add the section to `AGENTS.md`
+  (`--agents-md append`). Recommend `import`, because the section names Claude Code
+  commands that other agents reading `AGENTS.md` can't use.
+- **`note: the vault has community plugins`**: their code and the list of enabled plugins
+  are usually personal installs, so offer `--ignore-plugins`. Leave it off if the project
+  shares its plugins, and say so in `Conventions.md`.
 
-```bash
-mkdir -p docs/Journal docs/Decisions
-```
+## 3. Apply
 
-Don't create a folder for todos or tasks. Open work is a plain checkbox under a
-`## Follow-ups` heading in the journal day where it came up, and `/docs-vault:todos` lists
-it from there.
-
-If the user uses Obsidian's Daily notes plugin, point it at the journal: set `"folder":
-"Journal/"` in `docs/.obsidian/daily-notes.json`, merging into that file if it exists.
+Run `init.sh apply` with the flags chosen in step 2, and show its output.
 
 **Obsidian reads `.obsidian/*.json` only at startup, and writes its in-memory settings
-back when they change.** If the survey found Obsidian running, an edit to those files
-won't show until it reloads, and it can be lost if the user changes a setting in the
-meantime. After the last `.obsidian` edit in this run, offer to reload it. With the user's
-OK, run `obsidian command id=app:reload`, after `obsidian vault` confirms the CLI targets
-this project's `docs/`. Otherwise ask them to run **Reload app without saving** from the
-command palette.
+back when they change.** If Daily notes was changed and Obsidian is running, the change won't
+show until it reloads, and it can be lost if the user changes a setting in the meantime.
+Offer to reload it. With the user's OK, run `obsidian command id=app:reload`, after
+`obsidian vault` confirms the CLI targets this project's `docs/`. Otherwise ask them to run
+**Reload app without saving** from the command palette.
 
 ## 4. Write `Conventions.md` with the user
 
 Start from this skill's `assets/Conventions.md`, and fill it in from what the survey found
-and what the user tells you. Ask about the things you can't infer, and ask them together,
-not one by one:
+and what the user tells you. Create it with the Write tool, which refuses to replace a file
+you haven't read. Ask about the things you can't infer, and ask them together, not one by
+one:
 
 - **Layout:** which folders exist or should exist, and what each one holds. `Journal/`
   and `Decisions/` belong to docs-vault, so don't define them again. Don't add another
@@ -118,63 +124,7 @@ that goes stale.
 If `docs/Conventions.md` already exists, don't rewrite it. Offer only the additions the
 survey turned up.
 
-## 5. Point Claude at the vault from `CLAUDE.md`
-
-`CLAUDE.md` loads in every session. Hooks only fire when Claude touches `docs/`, and
-skills only load when a request matches them. This section covers the case neither one
-catches: work that changes something the vault documents without ever opening `docs/`.
-
-The section is this skill's `assets/CLAUDE-section.md`. Use it as it is, markers included,
-so a later run can find it and update it. **Don't add the skills' rules or the project's
-conventions to it.** They live in the skills and in `docs/Conventions.md`, and a copy
-here would go stale while loading into every session.
-
-Pick the file from the survey, and show the user the change before writing it:
-
-- **A `CLAUDE.md` exists, at the root or in `.claude/`, and has the markers:** replace the
-  text between them with the asset if it differs. Leave the rest of the file alone.
-- **A `CLAUDE.md` exists without the markers:** append the section after a blank line.
-- **Only `AGENTS.md` exists:** ask the user which option they want. Creating a
-  `CLAUDE.md` makes Claude Code stop reading `AGENTS.md` on its own, so either:
-  - create `CLAUDE.md` with `@AGENTS.md` on its first line, which keeps `AGENTS.md`
-    loaded, followed by the section. Recommend this one, because the section names Claude
-    Code commands that other agents reading `AGENTS.md` can't use; or
-  - append the section to `AGENTS.md`.
-- **Neither exists:** create `CLAUDE.md` at the project root containing just the section.
-
-## 6. Keep Obsidian's per-user state out of git
-
-Add the lines `.gitignore` doesn't already cover, even if the project isn't a git repo
-yet, because they matter from its first commit. Say what each group holds rather than
-just naming "Obsidian files". A user who doesn't know what's in `.obsidian/` can't
-judge whether it belongs in the repo.
-
-- **Personal settings, ignored by default.** Each user's open panes, the graph view's
-  settings, their editor preferences such as the default view mode, and their theme and
-  fonts. Obsidian rewrites these whenever someone clicks around, zooms the graph or
-  changes a preference, so
-  they'd churn on every commit, and they aren't the project's to set. Graph colours stay per-user as a result, and
-  `/docs-vault:graph` sets them for whoever runs it:
-
-  ```gitignore
-  docs/.obsidian/workspace.json
-  docs/.obsidian/workspace-mobile.json
-  docs/.obsidian/graph.json
-  docs/.obsidian/app.json
-  docs/.obsidian/appearance.json
-  ```
-
-- **Community plugins, offered** if the survey found any. Their code and the list of enabled plugins
-  are usually personal installs:
-
-  ```gitignore
-  docs/.obsidian/plugins/
-  docs/.obsidian/community-plugins.json
-  ```
-
-  Leave these out if the project wants to share its plugins, and say so in `Conventions.md`.
-
-## 7. Record the setup
+## 5. Record the setup
 
 Load `/docs-vault:record`, then write today's journal the way it describes. Keep it short:
 a `## Summary` with a bullet or two on what was set up, not one per answer the user gave.
@@ -183,7 +133,7 @@ as a layout rule the project commits to, and link it under `## Decisions`. Put a
 left for later, such as conventions the user wants to settle once the project grows,
 under `## Follow-ups` as plain checkboxes.
 
-## 8. Hand over
+## 6. Hand over
 
 Tell the user to open `docs/` as a vault in Obsidian (Open folder as vault), and that
 `recall` and `record` take over from here. If the layout has more than one folder, mention that `/docs-vault:graph` colour-codes the graph view by folder. If `~/.config/docs-vault/presets/` holds saved presets, offer `/docs-vault:preset` to apply one, so the new vault gets the user's usual Obsidian settings. Summarise what was created, what was already there, and

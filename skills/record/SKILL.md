@@ -1,6 +1,7 @@
 ---
 name: record
 description: Write to this project's docs/ Obsidian vault. It rewrites or creates notes when what is true changes, merges meaningful outcomes into today's journal memo, writes a Decisions/ note for a choice whose reason matters, and adds or ticks follow-up checkboxes. Use after changing anything outside the repo, after a decision worth keeping, when work is left unfinished, when a note turns out wrong or missing, and when the user says "write it down", "log this", "record that", "add a follow-up" or "update the docs".
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../todos/scripts/todos.sh), Bash(${CLAUDE_SKILL_DIR}/../lint/scripts/lint.sh *)
 ---
 
 # Record to the docs vault
@@ -55,16 +56,37 @@ be rerun."
    Follow-ups.
 4. If a durable choice was made, search `Decisions/` for one that already covers it.
 5. If work was left open or finished, look for the follow-up that already covers it, in
-   today's file and in earlier days (`rg -n '^[-*] \[ \]' docs/Journal/`).
+   today's file and in earlier days. The `todos` script lists every open one with the day
+   that raised it, by the same rules as `/docs-vault:todos`:
+
+   ```bash
+   "${CLAUDE_SKILL_DIR}/../todos/scripts/todos.sh"
+   ```
+
+   To reopen finished work, find its ticked box with `rg -n '^[-*+] \[[xX]\]' docs/Journal/`.
 6. Sort what the session produced into the four kinds above. Most of it will be none of
    them.
 7. Rewrite the notes whose facts changed.
 8. Create a decision only where one is justified.
 9. Add new follow-ups, and tick the ones this work finished.
 10. Merge the story into today's Summary.
-11. Check that the links resolve and that nothing is said twice.
+11. Check what you wrote with the `lint` script, naming each note you created or changed,
+    relative to `docs/`:
+
+    ```bash
+    "${CLAUDE_SKILL_DIR}/../lint/scripts/lint.sh" --only "Journal/2026-09-28.md" --only "Decisions/00012-authorization-lives-in-middleware.md"
+    ```
+
+    It checks links, headings, `§` references and the shape of journal days and decisions,
+    and reports only on those notes. Fix every error it reports in them. If you renamed,
+    moved or deleted a note, run it without `--only` too, because links to it elsewhere
+    may now be broken; fix those by piping them to the new target. Then read what you
+    wrote once more, and make sure nothing is said twice.
 
 Don't write a kind just because this list names it.
+
+If the skills were copied into `.claude/skills/`, the scripts are in the sibling folders
+`docs-vault-todos/scripts/` and `docs-vault-lint/scripts/` instead.
 
 ## Writing notes
 

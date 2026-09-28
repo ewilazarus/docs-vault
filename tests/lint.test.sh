@@ -127,7 +127,8 @@ EOF
 note "$v" Decisions/00002-second.md <<'EOF'
 # Second
 EOF
-expected=$(cat <<'EOF'
+# Expected output goes through a file: bash 3.2 misreads an apostrophe in a heredoc inside $().
+cat >"$tmp/expected" <<'EOF'
 | # | Severity | Where | Problem |
 |---|---|---|---|
 | 1 | error | `Decisions/00002-first.md` | Decision number 00002 is also used by `Decisions/00002-second.md`. Numbers are never shared. |
@@ -149,9 +150,30 @@ expected=$(cat <<'EOF'
 
 8 errors and 8 warnings in 6 files. Checked 8 notes: 5 journal files (1 in the legacy format, not checked for structure) and 2 decisions.
 EOF
-)
+expected=$(cat "$tmp/expected")
 check "reports every kind of problem, sorted by file and line" "$expected" "$("$BASH" "$lint" "$v")"
 
 check "output is stable across runs" "$("$BASH" "$lint" "$v")" "$("$BASH" "$lint" "$v")"
+
+echo "lint.sh: --only"
+
+cat >"$tmp/expected" <<'EOF'
+| # | Severity | Where | Problem |
+|---|---|---|---|
+| 1 | error | `Decisions/00002-second.md` | Decision number 00002 is also used by `Decisions/00002-first.md`. Numbers are never shared. |
+| 2 | error | `Decisions/00002-second.md` | No `date: YYYY-MM-DD` in the frontmatter. |
+| 3 | warning | `Decisions/00002-second.md` | No `## Why`. A decision says why it was made. |
+| 4 | error | `Journal/2030-01-01.md` | Dated in the future. The journal records what happened. |
+| 5 | warning | `Journal/2030-01-01.md` | No `description:` in the frontmatter. It is the day's headline. |
+
+3 errors and 2 warnings in 2 files. Reported on the 2 notes given with --only, not the rest of the vault.
+EOF
+expected=$(cat "$tmp/expected")
+check "reports only the notes given, in any path form" "$expected" \
+  "$("$BASH" "$lint" "$v" --only Decisions/00002-second.md --only "$v/Journal/2030-01-01.md")"
+
+check "a clean note among broken ones" \
+  "No problems found. Reported on the 1 note given with --only, not the rest of the vault." \
+  "$("$BASH" "$lint" "$v" --only docs/Reference/Spec.md)"
 
 finish

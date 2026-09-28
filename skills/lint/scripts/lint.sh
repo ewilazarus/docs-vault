@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # Check a docs vault as a whole and print its problems as a Markdown table.
 #
-#   lint.sh [docs-dir]    (defaults to $CLAUDE_PROJECT_DIR/docs, or ./docs)
+#   lint.sh [docs-dir] [--only <path>]...    (docs-dir defaults to $CLAUDE_PROJECT_DIR/docs,
+#                                             or ./docs)
+#
+# --only reports the problems in the given notes and nothing else, so the record skill can
+# check what it just wrote without old findings elsewhere getting in the way. The whole
+# vault is still read, since links and decision numbers depend on it. Paths are relative to
+# the vault, or start with its docs-dir.
 #
 # The hooks check each write as it happens. This checks what is already there, including
 # what shell commands and edits in Obsidian wrote:
@@ -23,7 +29,16 @@
 
 set -eu
 
-docs=${1:-${CLAUDE_PROJECT_DIR:-.}/docs}
+docs=""
+only=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --only) [ $# -ge 2 ] || { echo "--only needs a path" >&2; exit 2; }; only="$only$2
+"; shift 2 ;;
+    *) docs=$1; shift ;;
+  esac
+done
+docs=${docs:-${CLAUDE_PROJECT_DIR:-.}/docs}
 today=${DOCS_VAULT_TODAY:-$(date +%F)}
 
 if [ ! -d "$docs" ]; then
@@ -34,11 +49,19 @@ fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
+# The --only paths, relative to the vault.
+: >"$tmp/only"
+printf '%s' "$only" | while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  p=${p#"$docs"/}; p=${p#./}; p=${p#docs/}
+  printf '%s\n' "$p"
+done | LC_ALL=C sort -u >"$tmp/only"
+
 (cd "$docs" && find . -type f \
   -not -path './.obsidian/*' -not -path './.trash/*' -not -path './.git/*' -not -name '.DS_Store' |
   sed 's#^\./##' | LC_ALL=C sort) >"$tmp/index"
 
-awk -v docs="$docs" -v today="$today" -v index_file="$tmp/index" -v stats_file="$tmp/stats" '
+awk -v docs="$docs" -v today="$today" -v index_file="$tmp/index" -v only_file="$tmp/only" -v stats_file="$tmp/stats" '
 function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); gsub(/[ \t]+/, " ", s); return s }
 function dirname(p) { return (p ~ /\//) ? substr(p, 1, match(p, /\/[^\/]*$/) - 1) : "" }
 function basename(p) { sub(/^.*\//, "", p); return p }
@@ -53,6 +76,7 @@ function heading_key(h) {
 }
 
 function report(f, n, severity, message) {
+  if (scoped && !(f in only)) return
   printf "%s\t%d\t%s\t%s\n", f, n, severity, message
   if (severity == "error") errors++; else warnings++
 }
@@ -214,6 +238,8 @@ function check_decision(f,   name, number, k) {
 }
 
 BEGIN {
+  while ((getline p < only_file) > 0) { only[p] = 1; scoped = 1 }
+  close(only_file)
   while ((getline p < index_file) > 0) {
     files++; path[files] = p; lower[files] = tolower(p)
     if (p ~ /^Decisions\/[0-9][0-9][0-9][0-9][0-9]-[^\/]*\.md$/) {
@@ -239,6 +265,10 @@ plural() { [ "$1" -eq 1 ] && printf '%d %s' "$1" "$2" || printf '%d %ss' "$1" "$
 checked="Checked $(plural "$notes" note): $(plural "$days" journal\ file)"
 [ "$legacy" -eq 0 ] || checked="$checked ($legacy in the legacy format, not checked for structure)"
 checked="$checked and $(plural "$decisions" decision)."
+if [ -s "$tmp/only" ]; then
+  given=$(wc -l <"$tmp/only" | tr -d ' ')
+  checked="Reported on $([ "$given" -eq 1 ] && echo "the 1 note" || echo "the $given notes") given with --only, not the rest of the vault."
+fi
 
 if [ ! -s "$tmp/problems" ]; then
   echo "No problems found. $checked"
