@@ -1,6 +1,7 @@
 ---
 name: graph
 description: Colour-code the Obsidian graph view of this project's docs/ vault, one colour per kind of note, by writing colour groups to docs/.obsidian/graph.json. Use when the user runs /docs-vault:graph or asks to colour, colour-code or recolour the graph view, or to update it after the vault's layout changes.
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/graph.sh *)
 ---
 
 # Colour the graph view
@@ -8,17 +9,26 @@ description: Colour-code the Obsidian graph view of this project's docs/ vault, 
 The graph view's colours live in `colorGroups` in `docs/.obsidian/graph.json`. This skill
 sets them from how the vault is organised, so each kind of note reads at a glance.
 
+A bundled script reads and writes them, so you choose the groups and it does the rest:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/graph.sh show
+${CLAUDE_SKILL_DIR}/scripts/graph.sh set [--replace | --add] '<query>=#RRGGBB'...
+```
+
+Run it from the project root.
+
 ## 1. Survey
 
 ```bash
 sed -n '/^## Layout/,/^## /p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
 fd -e md -d 1 . docs 2>/dev/null || find docs -maxdepth 1 -name '*.md'
-jq '.colorGroups' docs/.obsidian/graph.json 2>/dev/null
+${CLAUDE_SKILL_DIR}/scripts/graph.sh show
 pgrep -xq Obsidian && echo "Obsidian is running"
 ```
 
-**If `colorGroups` already has entries, someone chose them.** Show them, and ask whether
+**If the vault already has colour groups, someone chose them.** Show them, and ask whether
 to replace them or add to them.
 
 ## 2. Pick the groups
@@ -41,27 +51,26 @@ beyond that the colours stop being easy to tell apart.
 
 Show the user the mapping as a table (colour, query, what it covers) before writing it.
 
-## 3. Write `graph.json`
+## 3. Write the groups
 
-Set only `colorGroups`. Keep every other key in the file, because they hold the user's
-graph settings. Create the file if it doesn't exist.
+Once the user agrees, pass the groups to the script in order, as `query=#RRGGBB`:
 
-```json
-"colorGroups": [
-  { "query": "file:Home OR file:Conventions", "color": { "a": 1, "rgb": 16098851 } },
-  { "query": "path:Journal", "color": { "a": 1, "rgb": 9080728 } },
-  { "query": "path:Decisions", "color": { "a": 1, "rgb": 14059590 } },
-  { "query": "path:Concepts", "color": { "a": 1, "rgb": 5016565 } }
-]
+```bash
+${CLAUDE_SKILL_DIR}/scripts/graph.sh set \
+  'file:Home OR file:Conventions=#F5A623' 'path:Journal=#8A8F98' \
+  'path:Decisions=#D68A46' 'path:Concepts=#4C8BF5'
 ```
 
 - **The first matching group wins,** so list narrower queries before broader ones. A group
   that picks a few notes out of a folder goes before that folder's group.
-- **`rgb` is the colour as an integer.** `#4C8BF5` becomes `0x4C8BF5`, which is `5016565`.
 - **Queries use Obsidian's search syntax:** `path:`, `file:`, `tag:`, joined with `OR`.
+- **Existing groups** need the user's choice from step 1: `--replace` swaps them all for
+  these, and `--add` keeps them, appends these, and recolours any whose query is already
+  there. Without either, the script refuses and lists them.
 
-Setting `"collapse-color-groups": false` leaves the Groups panel open in graph settings,
-so the user can see what was added.
+It converts the colours to the integers Obsidian stores, keeps every other setting in
+`graph.json`, creates the file if needed, and opens the Groups panel in graph settings so
+the user can see what was added. Show the user the table it prints.
 
 ## 4. Reload Obsidian
 
@@ -76,7 +85,7 @@ Offer to reload it. With the user's OK, check that `obsidian vault` reports this
 obsidian command id=app:reload
 ```
 
-Afterwards, check that `colorGroups` in `graph.json` still has the new groups. If the CLI
+Afterwards, run `graph.sh show` to check that the new groups survived the reload. If the CLI
 isn't available, ask the user to run **Reload app without saving** from the command palette.
 
 ## Nothing to record

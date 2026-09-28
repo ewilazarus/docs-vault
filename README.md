@@ -95,7 +95,7 @@ The plugin ships seven skills:
 | `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what happened, what was decided or what is open. It reads `Conventions.md`, answers what is true from the notes, what happened from the journal and why from the decisions, flags where they disagree, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open follow-up in the journal as a table: the day it was raised, its text and its sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `lint` | Run as `/docs-vault:lint`. A bundled script checks the whole vault, including what shell commands, Obsidian and merges wrote past the hooks: broken wikilinks, heading links and block links, bare `§` references, misnamed, future or malformed journal days, and decisions with a shared number, no `date:`, no `## Why` or no journal day linking them. Claude prints the table as-is, separates what can be fixed from history that stays as it is, and fixes nothing until you say so. |
-| `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. |
+| `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. Claude picks the groups and colours, and a bundled script writes them, keeping your other graph settings and any groups you chose unless you say otherwise. |
 | `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets, and the sidebar layout without any open notes) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
 | `record` | Rewrites notes when a fact changes, merges meaningful outcomes into today's journal, writes a decision note for a choice worth explaining, and adds or ticks follow-ups. Often it rightly writes nothing. It loads `recall` first, finds existing follow-ups with the `todos` script, names new decisions with a bundled script, and checks what it wrote with the `lint` script. |
 
@@ -190,7 +190,7 @@ dependency, so install kepano's obsidian-skills yourself.
 
 ## Tests
 
-The hook and the `init`, `todos`, `lint` and `next-decision` scripts have tests, which need only bash, `jq`
+The hook and the `init`, `todos`, `lint`, `graph` and `next-decision` scripts have tests, which need only bash, `jq`
 and git:
 
 ```bash
