@@ -97,7 +97,7 @@ The plugin ships seven skills:
 | `lint` | Run as `/docs-vault:lint`. A bundled script checks the whole vault, including what shell commands, Obsidian and merges wrote past the hooks: broken wikilinks, heading links and block links, bare `§` references, misnamed, future or malformed journal days, and decisions with a shared number, no `date:`, no `## Why` or no journal day linking them. Claude prints the table as-is, separates what can be fixed from history that stays as it is, and fixes nothing until you say so. |
 | `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. |
 | `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets, and the sidebar layout without any open notes) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
-| `record` | Rewrites notes when a fact changes, merges meaningful outcomes into today's journal, writes a decision note for a choice worth explaining, and adds or ticks follow-ups. Often it rightly writes nothing. It loads `recall` first, finds existing follow-ups with the `todos` script, and checks what it wrote with the `lint` script. |
+| `record` | Rewrites notes when a fact changes, merges meaningful outcomes into today's journal, writes a decision note for a choice worth explaining, and adds or ticks follow-ups. Often it rightly writes nothing. It loads `recall` first, finds existing follow-ups with the `todos` script, names new decisions with a bundled script, and checks what it wrote with the `lint` script. |
 
 ## Hooks
 
@@ -115,12 +115,17 @@ Claude remembering to load them:
   the journal records what happened, and plans belong in the project's notes. "Today" is
   the machine's local date, so work recorded after midnight goes in the new day's file.
 - **Decisions** are created as `Decisions/NNNNN-slug.md`, taking the next number, with
-  `date:` set to today in their frontmatter. One may be refined on the day it was made. After that, the same rule as a past journal day applies, because a changed
+  `date:` set to today in their frontmatter. "Next" counts the decisions on every local
+  and remote-tracking branch too, so two branches don't both take the same number. One may be refined on the day it was made. After that, the same rule as a past journal day applies, because a changed
   mind is a new decision.
 - **Each note Claude writes is linted** straight after the write, with the `lint` script
   limited to that note. Any errors, such as a broken link or a day without a Summary, go
   back to Claude to fix while the note is still in hand. Warnings are left to
   `/docs-vault:lint`, since a note may be only part-way written.
+- **Merges are linted too.** After Claude runs `git merge`, `pull`, `rebase` or
+  `cherry-pick`, the notes it changed in `docs/` are linted the same way. That is where a
+  decision number taken on two branches, or a link to a note renamed on the other side,
+  first shows up. Claude reports it, and asks before renumbering a decision.
 - **Section references** are links. A write that adds a bare `§4.2` outside a link or code
   is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References
   already in a file don't count, so old notes can still be edited.
@@ -185,7 +190,7 @@ dependency, so install kepano's obsidian-skills yourself.
 
 ## Tests
 
-The hook and the `init`, `todos` and `lint` scripts have tests, which need only bash, `jq`
+The hook and the `init`, `todos`, `lint` and `next-decision` scripts have tests, which need only bash, `jq`
 and git:
 
 ```bash

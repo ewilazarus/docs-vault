@@ -40,8 +40,9 @@ After the table, sort the rows into two groups, citing their `#`:
 Two errors need the user to choose:
 
 - **A shared decision number** usually comes from two branches that each took the next
-  one. The later decision needs a new number, and the journal links to it need updating.
-  Ask before renaming it, because other people's branches may link to it.
+  one. The later decision needs a new number, from the record skill's `next-decision.sh`,
+  and the journal links to it need updating. Ask before renaming it, because other
+  people's branches may link to it.
 - **A link to a note that doesn't exist yet** may be deliberate. Some vaults leave
   unresolved links as placeholders. Ask whether to create the note, remove the link or
   keep it.

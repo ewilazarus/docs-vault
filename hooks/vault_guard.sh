@@ -19,6 +19,11 @@
 # - PostToolUse on file writes runs the lint script on the note just written, and hands its
 #   errors back to Claude to fix while the note is still in hand. Warnings are left to
 #   /docs-vault:lint, since a note mid-way through a record run may not be finished yet.
+# - PostToolUse on Bash does the same after a git merge, pull, rebase or cherry-pick, for
+#   the notes it changed, since that is where two branches' decisions and links first meet.
+#
+# A new decision's number comes from the record skill's next-decision.sh, which also counts
+# the decisions on other branches.
 #
 # The history check enforces the shape of a change (only checkbox state and link targets
 # move), not its meaning: it doesn't know whether a box sits under `## Follow-ups`. The
@@ -43,6 +48,7 @@ fields=$(jq -r '@sh "
   skill_called=\(.tool_input.skill // .tool_input.skill_name // "")
   command_name=\(.command_name // "")
   target=\(.tool_input.file_path // .tool_input.path // "")
+  shell_command=\(.tool_input.command // "")
 "' <<<"$input")
 eval "$fields"
 
@@ -189,12 +195,45 @@ lint_written() {
 $errors"
 }
 
+# After a git merge, pull, rebase or cherry-pick, lints the notes it changed in docs/ and
+# hands any errors back. Two branches that each took the next decision number, or a note
+# renamed on one side and linked on the other, only meet here.
+lint_merged() {
+  printf '%s\n' "$shell_command" |
+    grep -Eq '(^|[;&|(]|[[:space:]])git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(merge|pull|rebase|cherry-pick)([[:space:]]|$)' ||
+    exit 0
+  [ -d "$project/docs" ] || exit 0
+  git -C "$project/docs" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+  local before after lint file out errors
+  before=$(git -C "$project/docs" rev-parse -q --verify ORIG_HEAD 2>/dev/null) || exit 0
+  after=$(git -C "$project/docs" rev-parse -q --verify HEAD 2>/dev/null) || exit 0
+  [ "$before" != "$after" ] || exit 0
+  lint="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/skills/lint/scripts/lint.sh"
+  [ -f "$lint" ] || exit 0
+  set -- "$project/docs"
+  while IFS= read -r file; do
+    case "$file" in .obsidian/*) ;; *.md) set -- "$@" --only "$file" ;; esac
+  done < <(git -C "$project/docs" diff --relative --name-only --diff-filter=AMR "$before" "$after" -- . 2>/dev/null)
+  [ $# -gt 1 ] || exit 0
+  out=$(bash "$lint" "$@")
+  errors=$(printf '%s\n' "$out" | grep '^| [0-9]* | error |' || true)
+  [ -n "$errors" ] || exit 0
+  remind "That git command changed notes in docs/, and the lint script found errors in them:
+
+| # | Severity | Where | Problem |
+|---|---|---|---|
+$errors
+
+Tell the user. A decision number shared by two notes means two branches each took the next one: offer to renumber the newer decision with the record skill's next-decision.sh and update the links to it, but ask first, since other branches may link to it. Fix broken links by piping them to the note's new name."
+}
+
 # --- dispatch ----------------------------------------------------------------------------
 
 case "$event" in
   PostToolUse)
     case "$tool" in
       Skill) mark "$(skill_from "$skill_called")"; exit 0 ;;
+      Bash) lint_merged; exit 0 ;;
       Edit | Write | MultiEdit) ;;
       *) exit 0 ;;
     esac
@@ -255,13 +294,12 @@ case "$rel" in
   Decisions/*.md)
     if [ ! -f "$project/docs/$rel" ]; then
       number=$(printf '%s\n' "$rel" | sed -n 's#^Decisions/\([0-9]\{5\}\)-[a-z0-9][a-z0-9-]*\.md$#\1#p')
-      highest=$(find "$project/docs/Decisions" -maxdepth 1 -name '[0-9][0-9][0-9][0-9][0-9]-*.md' 2>/dev/null |
-        sed 's#.*/\([0-9]\{5\}\)-.*#\1#' | sort | tail -n 1)
-      next=$(printf '%05d' $((10#${highest:-0} + 1)))
+      # The record skill's script counts the decisions on every branch too.
+      next=$(CLAUDE_PROJECT_DIR=$project bash "$(dirname "${BASH_SOURCE[0]}")/../skills/record/scripts/next-decision.sh")
       [ -n "$number" ] ||
-        deny "New decisions are named Decisions/NNNNN-short-slug.md: the next number across Decisions/, $next, then a short lowercase slug."
-      [ $((10#$number)) -gt $((10#${highest:-0})) ] ||
-        deny "Decision numbers are never reused or filled in. The next one is $next."
+        deny "New decisions are named Decisions/NNNNN-short-slug.md: the next number, $next, then a short lowercase slug. The record skill's next-decision.sh prints the whole path from the title."
+      [ $((10#$number)) -ge $((10#$next)) ] ||
+        deny "Decision numbers are never reused or filled in, including numbers taken on other branches. The next one is $next."
       content=$(jq -r '.tool_input.content // ""' <<<"$input")
       printf '%s\n' "$content" | grep -qx "date: $today" ||
         deny "A new decision carries \`date: $today\` in its frontmatter: decisions are recorded on the day they're made."

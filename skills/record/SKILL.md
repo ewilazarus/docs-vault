@@ -1,7 +1,7 @@
 ---
 name: record
 description: Write to this project's docs/ Obsidian vault. It rewrites or creates notes when what is true changes, merges meaningful outcomes into today's journal memo, writes a Decisions/ note for a choice whose reason matters, and adds or ticks follow-up checkboxes. Use after changing anything outside the repo, after a decision worth keeping, when work is left unfinished, when a note turns out wrong or missing, and when the user says "write it down", "log this", "record that", "add a follow-up" or "update the docs".
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../todos/scripts/todos.sh), Bash(${CLAUDE_SKILL_DIR}/../lint/scripts/lint.sh *)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/next-decision.sh *), Bash(${CLAUDE_SKILL_DIR}/../todos/scripts/todos.sh), Bash(${CLAUDE_SKILL_DIR}/../lint/scripts/lint.sh *)
 ---
 
 # Record to the docs vault
@@ -247,10 +247,17 @@ Renaming, moving a helper, picking between equivalent idioms, fixing a typo or c
 the obvious API is not a decision note. If it needs saying at all, a clause in the Summary
 is enough.
 
-Name it `Decisions/NNNNN-short-slug.md`: the next five-digit number across `Decisions/`
-(one more than the highest there, starting at `00001`), then a short lowercase slug.
-Numbers are never reused, even when a decision is deleted. The date doesn't go in the
-name, because the journal that links the decision already dates it; it goes in the
+Name it `Decisions/NNNNN-short-slug.md`, and get the name from the script, passing the
+title:
+
+```bash
+"${CLAUDE_SKILL_DIR}/scripts/next-decision.sh" "Authorization lives in middleware"
+```
+
+It prints the path, with the next five-digit number. That number is one more than the
+highest on every branch, not only this checkout's, so two branches don't both take the
+same one. Numbers are never reused, even when a decision is deleted. The date doesn't go
+in the name, because the journal that links the decision already dates it; it goes in the
 `date:` frontmatter, which is required.
 
 ```markdown

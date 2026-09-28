@@ -244,6 +244,56 @@ The lint script found errors in Linted.md after this write. Fix them now, in the
   "$(written Linted.md "See [[Nowhere]] and [[Legacy#Missing]]." | jq -r '.hookSpecificOutput | .hookEventName, .additionalContext')"
 check "another note's errors aren't reported" "" "$(written Other.md "Fine.")"
 
+echo "vault_guard.sh: branches and merges"
+
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+repo_project="$tmp/merging"
+mkdir -p "$repo_project/docs/Journal" "$repo_project/docs/Decisions"
+g() { git -C "$repo_project" "$@"; }
+g init -q -b main
+printf '# Old name\n' >"$repo_project/docs/Old name.md"
+decision "Use Postgres" 2020-01-01 >"$repo_project/docs/Decisions/00001-use-postgres.md"
+g add -A && g commit -qm base
+g checkout -qb feature
+decision "Use Redis" 2020-01-02 >"$repo_project/docs/Decisions/00002-use-redis.md"
+printf 'See [[Old name]].\n' >"$repo_project/docs/Linking.md"
+g add -A && g commit -qm feature
+g checkout -q main
+g mv "docs/Old name.md" "docs/New name.md"
+g commit -qm rename
+
+# shell <command>: sends the PostToolUse of a Bash command run in the git project.
+shell() {
+  jq -nc --arg s "$session" --arg cwd "$repo_project" --arg c "$1" \
+    '{session_id: $s, cwd: $cwd, hook_event_name: "PostToolUse", tool_name: "Bash", tool_input: {command: $c}}' |
+    CLAUDE_PROJECT_DIR=$repo_project "$BASH" "$guard"
+}
+
+check "a decision number taken on another branch is denied" deny "$(
+  export CLAUDE_PROJECT_DIR=$repo_project docs=$repo_project/docs
+  write_file Decisions/00002-use-sqlite.md "$(decision "Use SQLite" "$today")")"
+check "the next number after every branch's" allow "$(
+  export CLAUDE_PROJECT_DIR=$repo_project docs=$repo_project/docs
+  write_file Decisions/00003-use-sqlite.md "$(decision "Use SQLite" "$today")")"
+
+decision "Use SQLite" 2020-01-03 >"$repo_project/docs/Decisions/00002-use-sqlite.md"
+g add -A && g commit -qm sqlite
+
+check "other shell commands are quiet" "" "$(shell "git status")"
+g merge -q --no-edit feature
+merged=$(shell "cd $repo_project && git merge feature" | jq -r '.hookSpecificOutput.additionalContext')
+check "a merge reports the shared number" yes \
+  "$(printf '%s' "$merged" | grep -q 'Decision number 00002 is also used by `Decisions/00002-use-sqlite.md`' && echo yes)"
+check "and the link to a note renamed on the other side" yes \
+  "$(printf '%s' "$merged" | grep -q 'Broken link `\[\[Old name\]\]`' && echo yes)"
+check "but not notes the merge didn't change" no \
+  "$(printf '%s' "$merged" | grep -q '00002-use-sqlite.md` | Decision' && echo yes || echo no)"
+check "git -C and pull count as well" yes \
+  "$(shell "git -C $repo_project pull --no-rebase" | grep -q additionalContext && echo yes)"
+g reset -q --hard HEAD~1 && g update-ref ORIG_HEAD HEAD
+check "nothing to compare is quiet" "" "$(shell "git merge feature")"
+
 echo "vault_guard.sh: failing open"
 
 out=$(printf 'not json' | "$BASH" "$guard" 2>/dev/null) && status=0 || status=$?
