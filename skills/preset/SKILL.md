@@ -1,7 +1,7 @@
 ---
 name: preset
 description: Save the Obsidian settings of this project's docs/ vault as a named preset, or apply a saved preset so a new vault looks and behaves like one you already have. Settings only, never notes or vault structure. Use when the user runs /docs-vault:preset, or asks to save, capture, reuse, copy or apply their Obsidian settings, set-up or look to another vault.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preset.sh *)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preset.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
 ---
 
 # Obsidian setting presets
@@ -59,9 +59,11 @@ Never notes, folders or `Conventions.md`, and never which notes are open.
    re-run.
 5. **Install missing plugins.** For each `not installed:` line, offer to install it through
    the Obsidian CLI. This downloads third-party code, so get the user's OK for each one.
-   Check first that `obsidian vault` reports this project's `docs/`. Then run:
+   Check first that the CLI targets this project's vault, and install only if the check
+   passes:
 
    ```bash
+   ${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh check
    obsidian plugin:install id=<id>
    obsidian plugin:enable id=<id> filter=community
    ```
@@ -73,10 +75,10 @@ Never notes, folders or `Conventions.md`, and never which notes are open.
    offer `/docs-vault:graph` to recolour the graph for this vault's layout.
 7. **Reload Obsidian.** Obsidian reads these files only at startup, and writes its
    in-memory settings back over them when a setting changes. It rewrites
-   `workspace.json` whenever a pane moves, so reload promptly after applying a layout. If
-   it's running, offer `obsidian command id=app:reload`, after `obsidian vault` confirms
-   the target.
-   Otherwise ask the user to run **Reload app without saving** from the command palette.
+   `workspace.json` whenever a pane moves, so reload promptly after applying a layout.
+   Offer it, and with the user's OK run
+   `${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload`. It reloads only after
+   checking that the CLI targets this vault, and says what to do if it didn't.
 
 ## Nothing to record
 

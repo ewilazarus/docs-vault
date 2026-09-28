@@ -92,7 +92,7 @@ The plugin ships seven skills:
 | Skill | What it does |
 |---|---|
 | `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, offers both plugins to the project through its settings, creates `Journal/` and `Decisions/`, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. A bundled script makes the file changes, showing them first as a plan: it only adds what's missing, keeps any setting already set differently, and changes nothing on a second run. It never overwrites existing files. |
-| `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what happened, what was decided or what is open. It reads `Conventions.md`, answers what is true from the notes, what happened from the journal and why from the decisions, flags where they disagree, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. |
+| `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what happened, what was decided or what is open. It reads `Conventions.md`, answers what is true from the notes, what happened from the journal and why from the decisions, flags where they disagree, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. A bundled script checks that the Obsidian CLI is pointed at this project's vault before Claude queries it, and the other skills use the same script to reload Obsidian safely. |
 | `todos` | Run as `/docs-vault:todos`. A bundled script lists every open follow-up in the journal as a table: the day it was raised, its text and its sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
 | `lint` | Run as `/docs-vault:lint`. A bundled script checks the whole vault, including what shell commands, Obsidian and merges wrote past the hooks: broken wikilinks, heading links and block links, bare `§` references, misnamed, future or malformed journal days, and decisions with a shared number, no `date:`, no `## Why` or no journal day linking them. Claude prints the table as-is, separates what can be fixed from history that stays as it is, and fixes nothing until you say so. |
 | `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. Claude picks the groups and colours, and a bundled script writes them, keeping your other graph settings and any groups you chose unless you say otherwise. |
@@ -186,11 +186,13 @@ its `.claude/settings.json`:
 Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
 `docs-vault-init`, `docs-vault-recall`, `docs-vault-record`, `docs-vault-todos`, `docs-vault-lint`, `docs-vault-graph` and `docs-vault-preset`. The prefix keeps `init` from
 clashing with Claude Code's built-in `/init`. Copied skills don't get the hooks or the
-dependency, so install kepano's obsidian-skills yourself.
+dependency, so install kepano's obsidian-skills yourself. Some skills run another skill's
+script, as `../recall/scripts/obsidian.sh` for example, and with the prefix those folders
+are `../docs-vault-recall/…` instead, so expect a permission prompt the first time.
 
 ## Tests
 
-The hook and the `init`, `todos`, `lint`, `graph` and `next-decision` scripts have tests, which need only bash, `jq`
+The hook and the `init`, `todos`, `lint`, `graph`, `next-decision` and `obsidian` scripts have tests, which need only bash, `jq`
 and git:
 
 ```bash

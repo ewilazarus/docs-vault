@@ -1,7 +1,7 @@
 ---
 name: recall
 description: Look things up in this project's docs/ folder, an Obsidian vault of notes on what is true now, a daily journal of what meaningful things happened and what was left open, and decision notes on why important choices were made. Use before any work the vault documents, and whenever the user asks how something works here, what happened, what was decided, why something is the way it is, or what is still open, or mentions "the docs", "the vault", "the journal" or "decisions". Read-only; hands over to the record skill once there is something to write down.
-allowed-tools: Read, Grep, Glob, Bash(rg *), Bash(fd *), Bash(obsidian vault), Bash(obsidian read *), Bash(obsidian search *), Bash(obsidian search:context *), Bash(obsidian file *), Bash(obsidian tasks *), Bash(obsidian backlinks *)
+allowed-tools: Read, Grep, Glob, Bash(rg *), Bash(fd *), Bash(${CLAUDE_SKILL_DIR}/scripts/obsidian.sh check), Bash(obsidian read *), Bash(obsidian search *), Bash(obsidian search:context *), Bash(obsidian file *), Bash(obsidian tasks *), Bash(obsidian backlinks *)
 ---
 
 # Recall from the docs vault
@@ -85,9 +85,15 @@ deliberately missing and a decision explains why, someone made that call on purp
 
 **Use obsidian-cli, and check which vault it's pointed at.** Every project's vault is
 named `docs`, so `vault=docs` is ambiguous, and by default the CLI targets whichever vault
-was focused last. Before the first query in a session, run `obsidian vault` and check that
-the path it reports is this project's `docs/`. If it isn't, or the command fails, use `rg`
-and `fd`.
+was focused last. Before the first query in a session, check it with the bundled script:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/obsidian.sh check
+```
+
+It compares the vault the CLI reports with this project's `docs/`, symlinks resolved. If
+it fails, use `rg` and `fd`, and pass on what it says to do. That is usually switching to
+this vault's window in Obsidian.
 
 ```bash
 obsidian search:context query="path:Decisions connection pool" # decisions about a subject

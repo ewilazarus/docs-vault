@@ -1,7 +1,7 @@
 ---
 name: graph
 description: Colour-code the Obsidian graph view of this project's docs/ vault, one colour per kind of note, by writing colour groups to docs/.obsidian/graph.json. Use when the user runs /docs-vault:graph or asks to colour, colour-code or recolour the graph view, or to update it after the vault's layout changes.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/graph.sh *)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/graph.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
 ---
 
 # Colour the graph view
@@ -78,15 +78,15 @@ Obsidian reads `graph.json` only at startup, and writes its in-memory settings b
 they change. If Obsidian is running, the new colours won't show until it reloads, and
 they're lost if the user touches a graph setting in the meantime.
 
-Offer to reload it. With the user's OK, check that `obsidian vault` reports this project's
-`docs/`, then run:
+Offer to reload it. With the user's OK, run the recall skill's script, which reloads only
+once it has checked that the Obsidian CLI targets this vault:
 
 ```bash
-obsidian command id=app:reload
+${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload
 ```
 
-Afterwards, run `graph.sh show` to check that the new groups survived the reload. If the CLI
-isn't available, ask the user to run **Reload app without saving** from the command palette.
+If it didn't reload, pass on what it says. Afterwards, run `graph.sh show` to check that
+the new groups survived the reload.
 
 ## Nothing to record
 

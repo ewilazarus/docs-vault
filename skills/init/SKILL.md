@@ -2,7 +2,7 @@
 name: init
 description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal and the decisions folder, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/init.sh *)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/init.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
 ---
 
 # Bootstrap the docs vault
@@ -90,9 +90,10 @@ Run `init.sh apply` with the flags chosen in step 2, and show its output.
 **Obsidian reads `.obsidian/*.json` only at startup, and writes its in-memory settings
 back when they change.** If Daily notes was changed and Obsidian is running, the change won't
 show until it reloads, and it can be lost if the user changes a setting in the meantime.
-Offer to reload it. With the user's OK, run `obsidian command id=app:reload`, after
-`obsidian vault` confirms the CLI targets this project's `docs/`. Otherwise ask them to run
-**Reload app without saving** from the command palette.
+Offer to reload it. With the user's OK, run
+`${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload`. It reloads only after checking
+that the CLI targets this vault, and says what to do if it didn't. A vault Obsidian hasn't
+opened yet has nothing to reload: step 6 tells the user to open it.
 
 ## 4. Write `Conventions.md` with the user
 
