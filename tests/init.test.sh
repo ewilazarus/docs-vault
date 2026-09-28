@@ -150,6 +150,50 @@ run "$p" apply --agents-md append >/dev/null
 check "append adds the section to AGENTS.md" "$(printf '# Agents\n\n'; cat "$section")" "$(cat "$p/AGENTS.md")"
 check "and a later run finds it there" "" "$(run "$p" plan | grep -i 'md:' || true)"
 
+echo "init.sh: --checks"
+
+export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
+p=$(project checked git)
+git -C "$p" remote add origin git@github.com:someone/project.git
+run "$p" apply >/dev/null
+check "a plan with --checks copies the scripts, and adds the hook and the workflow" "\
+.docs-vault/check.sh: new file
+.docs-vault/lint.sh: new file
+.docs-vault/history.sh: new file
+.git/hooks/pre-commit: new file, runs .docs-vault/check.sh --staged
+.github/workflows/docs-vault.yml: new file, runs the check on every push and pull request" \
+  "$(run "$p" plan --checks)"
+run "$p" apply --checks >/dev/null
+check "the copies match the plugin's" "same" \
+  "$(cmp -s "$p/.docs-vault/history.sh" "$repo/skills/lint/scripts/history.sh" && [ -x "$p/.docs-vault/check.sh" ] && echo same)"
+check "a second run changes nothing" \
+  "Nothing to change: the project already has everything init sets up." "$(run "$p" apply --checks)"
+
+echo "# edited" >>"$p/.docs-vault/lint.sh"
+check "a stale copy is updated, even without --checks" ".docs-vault/lint.sh: update to the plugin's version" \
+  "$(run "$p" plan)"
+run "$p" apply >/dev/null
+
+git -C "$p" add -A && GIT_AUTHOR_DATE=2020-01-01T12:00:00+00:00 git -C "$p" commit -qm setup
+printf '## Summary\n\n- Old day.\n' >"$p/docs/Journal/2020-01-01.md"
+git -C "$p" add -A && GIT_AUTHOR_DATE=2020-01-01T12:00:00+00:00 git -C "$p" commit -qm old --no-verify
+printf '## Summary\n\n- Old day, rewritten.\n' >"$p/docs/Journal/2020-01-01.md"
+git -C "$p" add -A
+check "the hook stops a commit that rewrites a past day" "blocked" \
+  "$(git -C "$p" commit -qm rewrite >/dev/null 2>&1 && echo committed || echo blocked)"
+check "and says why" yes \
+  "$( (cd "$p" && git commit -qm rewrite 2>&1) | grep -q "changes a past day's prose" && echo yes)"
+git -C "$p" reset -q --hard
+
+p=$(project foreign-hook git)
+printf '#!/bin/sh\nnpm test\n' >"$p/.git/hooks/pre-commit"
+check "someone else's pre-commit hook is kept" "\
+.git/hooks/pre-commit:
+  kept, it is someone else's; add \`.docs-vault/check.sh --staged\` to it
+CI:
+  note: not on GitHub; run \`.docs-vault/check.sh --range <base>..HEAD\` in your CI" \
+  "$(run "$p" plan --checks | sed -n '/pre-commit:/,$p')"
+
 echo "init.sh: problems"
 
 p=$(project broken)

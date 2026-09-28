@@ -1,0 +1,37 @@
+name: tests
+
+# The scripts target bash 3.2 and the BSD tools macOS ships, and GNU tools with mawk on
+# Linux. Run the suite on both, and on macOS under /bin/bash (3.2) as well as bash 5.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            bash: /bin/bash
+          - os: macos-latest
+            bash: bash
+          - os: ubuntu-latest
+            bash: bash
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}, ${{ matrix.bash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tool versions
+        run: |
+          jq --version
+          git --version
+      - name: Tests
+        # Keep macOS on its own BSD tools, not the Homebrew GNU ones the runner may add.
+        # Resolve the shell first, so bash 5 stays bash 5 once /usr/bin comes first.
+        run: |
+          shell=$(command -v ${{ matrix.bash }})
+          if [ "$RUNNER_OS" = macOS ]; then export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"; fi
+          "$shell" --version | head -n 1
+          "$shell" tests/run.sh

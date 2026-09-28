@@ -22,8 +22,8 @@ missing, keeps any value that is already set differently and says so, and change
 on a second run. Don't make those edits by hand.
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/init.sh plan  [--agents-md import|append] [--ignore-plugins]
-${CLAUDE_SKILL_DIR}/scripts/init.sh apply [--agents-md import|append] [--ignore-plugins]
+${CLAUDE_SKILL_DIR}/scripts/init.sh plan  [--agents-md import|append] [--ignore-plugins] [--checks]
+${CLAUDE_SKILL_DIR}/scripts/init.sh apply [--agents-md import|append] [--ignore-plugins] [--checks]
 ```
 
 Run it from the project root.
@@ -72,7 +72,18 @@ Show the user the plan's output, and explain each part in plain words:
   them for whoever runs it. Say what the lines hold rather than just naming "Obsidian
   files": a user who doesn't know what's in `.obsidian/` can't judge them.
 
-Two choices change the plan. Ask them together:
+Three choices change the plan. Ask them together:
+
+- **`--checks`, the vault's rules in git.** The hooks only guard Claude's writes. Edits
+  in Obsidian, teammates' edits and shell commands skip them. This copies the lint
+  skill's `check.sh`, `lint.sh` and `history.sh` into `.docs-vault/`, where git can run
+  them without the plugin, adds a pre-commit hook for this clone, and on GitHub a
+  workflow for every push and pull request. A commit then fails if a note it changes has
+  lint errors, or if it rewrites a past journal day or an older decision. `git commit
+  --no-verify` skips the check once, for a deliberate migration. Each teammate gets the
+  pre-commit hook by running `/docs-vault:init` in their own clone; the workflow covers
+  everyone. Later runs keep the copies up to date. Recommend it for a vault shared by
+  several people.
 
 - **`CLAUDE.md: needs a choice`** means the project has `AGENTS.md` and no `CLAUDE.md`.
   Creating a `CLAUDE.md` makes Claude Code stop reading `AGENTS.md` on its own, so either

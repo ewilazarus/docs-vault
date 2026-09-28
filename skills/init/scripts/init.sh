@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Make init's file changes in a project, without overwriting anything.
 #
-#   init.sh plan  [--agents-md import|append] [--ignore-plugins]   show the changes, make none
-#   init.sh apply [--agents-md import|append] [--ignore-plugins]
+#   init.sh plan  [--agents-md import|append] [--ignore-plugins] [--checks]   show, change nothing
+#   init.sh apply [--agents-md import|append] [--ignore-plugins] [--checks]
 #
 # Run it from the project root. It:
 #
@@ -15,7 +15,12 @@
 #   CLAUDE.md. A project with only AGENTS.md needs --agents-md: `import` creates CLAUDE.md
 #   with `@AGENTS.md` and the section, and `append` adds the section to AGENTS.md;
 # - adds to .gitignore the Obsidian per-user settings it doesn't ignore yet, and with
-#   --ignore-plugins the community plugins too.
+#   --ignore-plugins the community plugins too;
+# - with --checks, copies the lint skill's check.sh, lint.sh and history.sh into
+#   .docs-vault/, so git can run them without the plugin, installs a pre-commit hook that
+#   runs `.docs-vault/check.sh --staged` unless the clone already has one, and on GitHub
+#   adds a workflow that runs it on every push and pull request. Once .docs-vault/ exists,
+#   every run keeps its copies up to date, with or without --checks.
 #
 # A setting that already has a different value is reported as kept, never changed, so a
 # plugin someone disabled stays disabled. Running it again changes nothing. Only the
@@ -47,7 +52,7 @@ die() { echo "$*" >&2; exit 2; }
 [ $# -ge 1 ] || usage
 mode=$1; shift
 case "$mode" in plan | apply) ;; *) usage ;; esac
-agents_md="" ignore_plugins=""
+agents_md="" ignore_plugins="" checks=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --agents-md)
@@ -56,6 +61,7 @@ while [ $# -gt 0 ]; do
       case "$agents_md" in import | append) ;; *) usage ;; esac
       ;;
     --ignore-plugins) ignore_plugins=1; shift ;;
+    --checks) checks=1; shift ;;
     *) usage ;;
   esac
 done
@@ -259,6 +265,86 @@ gitignore() {
   return 0
 }
 
+# --- the git checks ----------------------------------------------------------------------
+
+# The lint skill's scripts, in the plugin or in a copied docs-vault-lint skill.
+lint_scripts=""
+for dir in "$(dirname "$0")/../../lint/scripts" "$(dirname "$0")/../../docs-vault-lint/scripts"; do
+  [ -f "$dir/check.sh" ] && { lint_scripts=$(cd "$dir" && pwd); break; }
+done
+
+pre_commit='#!/bin/sh
+# docs-vault: check the docs vault before each commit. Skip once with --no-verify.
+exec .docs-vault/check.sh --staged
+'
+
+workflow='name: docs-vault
+
+# Checks the docs vault in every pushed commit: lint errors in the notes that changed, and
+# the rule that past journal days and older decisions keep their prose.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  vault:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check the docs vault
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          # A new branch has no "before": check what it adds to the default branch.
+          if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            BASE=$(git merge-base HEAD "origin/$DEFAULT_BRANCH" 2>/dev/null || git rev-list --max-parents=0 HEAD | tail -n 1)
+          fi
+          .docs-vault/check.sh --range "$BASE..HEAD"
+'
+
+checks() {
+  local name hooks hook
+  [ -n "$checks" ] || [ -d .docs-vault ] || return 0
+  [ -n "$lint_scripts" ] || { printf '.docs-vault/:\n  note: the lint skill'"'"'s scripts weren'"'"'t found next to init, so it wasn'"'"'t set up\n'; return 0; }
+  for name in check.sh lint.sh history.sh; do
+    if [ ! -f ".docs-vault/$name" ]; then
+      change ".docs-vault/$name: new file"
+    elif ! cmp -s "$lint_scripts/$name" ".docs-vault/$name"; then
+      change ".docs-vault/$name: update to the plugin's version"
+    else
+      continue
+    fi
+    if applying; then mkdir -p .docs-vault; cp "$lint_scripts/$name" ".docs-vault/$name"; chmod +x ".docs-vault/$name"; fi
+  done
+  [ -n "$checks" ] || return 0
+
+  if [ -z "$in_git" ]; then
+    printf 'pre-commit hook:\n  note: not a git repository yet, so no hook; run init again once it is\n'
+  else
+    hooks=$(git rev-parse --git-path hooks)
+    hook="$hooks/pre-commit"
+    if [ ! -f "$hook" ]; then
+      change "$hook: new file, runs .docs-vault/check.sh --staged"
+      if applying; then mkdir -p "$hooks"; printf '%s' "$pre_commit" >"$hook"; chmod +x "$hook"; fi
+    elif ! grep -q '.docs-vault/check.sh' "$hook"; then
+      printf '%s:\n  kept, it is someone else'"'"'s; add `.docs-vault/check.sh --staged` to it\n' "$hook"
+    fi
+  fi
+
+  if [ -f .github/workflows/docs-vault.yml ]; then
+    :
+  elif [ -d .github ] || git remote -v 2>/dev/null | grep -q 'github\.com'; then
+    change ".github/workflows/docs-vault.yml: new file, runs the check on every push and pull request"
+    if applying; then printf '%s' "$workflow" | write .github/workflows/docs-vault.yml; fi
+  else
+    printf 'CI:\n  note: not on GitHub; run `.docs-vault/check.sh --range <base>..HEAD` in your CI\n'
+  fi
+}
+
 # --- run ---------------------------------------------------------------------------------
 
 # Refuse before changing anything, rather than stop halfway.
@@ -275,4 +361,5 @@ folders
 daily_notes
 section
 gitignore
+checks
 [ -n "$changes" ] || echo "Nothing to change: the project already has everything init sets up."

@@ -149,6 +149,24 @@ Edit and their kin, so a Bash command that writes into `docs/` bypasses them, as
 own edits in Obsidian. That is deliberate: shell commands remain an escape hatch, and need
 the same trust they always did.
 
+## Checking every commit
+
+To hold the rules for everyone's edits, not only Claude's, run `/docs-vault:init` and
+accept its `--checks` option. It copies three scripts into the project's `.docs-vault/`,
+where git can run them without the plugin:
+
+- **A pre-commit hook** runs `.docs-vault/check.sh --staged`. The commit fails if a note it
+  changes has lint errors, or if it rewrites a past journal day or an older decision,
+  beyond ticking a checkbox or re-pointing a link. Each clone installs its own hook, so
+  each teammate runs `/docs-vault:init` once. `git commit --no-verify` skips it, for a
+  deliberate migration.
+- **On GitHub, a workflow** runs `.docs-vault/check.sh --range` on every push and pull
+  request, and judges each commit as of the day it was authored, so rebased work isn't
+  mistaken for a rewrite. Elsewhere, run the same command in your CI.
+
+Only notes a commit changes are linted, so older problems don't block anyone. Running
+`init` again updates the copies when the plugin changes.
+
 It builds on [kepano/obsidian-skills](https://github.com/kepano/obsidian-skills) for the
 Markdown, Bases and CLI know-how.
 
@@ -198,11 +216,12 @@ are `../docs-vault-recall/…` instead, so expect a permission prompt the first 
 
 ## Tests
 
-The hook and the `init`, `todos`, `lint`, `graph`, `next-decision` and `obsidian` scripts have tests, which need only bash, `jq`
-and git:
+The hook and every bundled script have tests, which need only bash, `jq` and git:
 
 ```bash
 bash tests/run.sh
 ```
 
-On macOS, `/bin/bash tests/run.sh` also checks them against bash 3.2.
+On macOS, `/bin/bash tests/run.sh` also checks them against bash 3.2. CI runs them on
+every push: on macOS under bash 3.2 and bash 5 with the system's BSD tools, and on Ubuntu
+with GNU tools and mawk.

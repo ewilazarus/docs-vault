@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Check a docs vault as a whole and print its problems as a Markdown table.
 #
-#   lint.sh [docs-dir] [--only <path>]...    (docs-dir defaults to $CLAUDE_PROJECT_DIR/docs,
-#                                             or ./docs)
+#   lint.sh [docs-dir] [--only <path>]... [--strict]    (docs-dir defaults to
+#                                                        $CLAUDE_PROJECT_DIR/docs, or ./docs)
+#
+# --strict exits 1 when there are errors, for git hooks and CI. Warnings never fail it.
 #
 # --only reports the problems in the given notes and nothing else, so the record skill can
 # check what it just wrote without old findings elsewhere getting in the way. The whole
@@ -31,10 +33,12 @@ set -eu
 
 docs=""
 only=""
+strict=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --only) [ $# -ge 2 ] || { echo "--only needs a path" >&2; exit 2; }; only="$only$2
 "; shift 2 ;;
+    --strict) strict=1; shift ;;
     *) docs=$1; shift ;;
   esac
 done
@@ -283,3 +287,4 @@ END { printf "\n%d", nfiles > "/dev/stderr" }
 ' 2>"$tmp/nfiles"
 
 printf '\n%s and %s in %s. %s\n' "$(plural "$errors" error)" "$(plural "$warnings" warning)" "$(plural "$(tr -d '\n' <"$tmp/nfiles")" file)" "$checked"
+[ -z "$strict" ] || [ "$errors" -eq 0 ]
