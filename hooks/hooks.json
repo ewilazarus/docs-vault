@@ -1,5 +1,5 @@
 {
-  "description": "Route work on docs/ through the recall and record skills, and keep past journal days and decisions unchanged except for checkbox state and link targets.",
+  "description": "Route work on docs/ through the recall and record skills, and keep past journal days and decisions unchanged except for checkbox state and link targets, and lint each note Claude writes.",
   "hooks": {
     "PreToolUse": [
       {
@@ -11,7 +11,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Skill",
+        "matcher": "Skill|Edit|Write|MultiEdit",
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
         ]

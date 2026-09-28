@@ -78,7 +78,9 @@ be rerun."
     ```
 
     It checks links, headings, `§` references and the shape of journal days and decisions,
-    and reports only on those notes. Fix every error it reports in them. If you renamed,
+    and reports only on those notes. Fix every error it reports in them. The plugin's hook
+    already hands back each write's errors as it happens; this run also catches the
+    warnings, and covers skills copied without the hooks. If you renamed,
     moved or deleted a note, run it without `--only` too, because links to it elsewhere
     may now be broken; fix those by piping them to the new target. Then read what you
     wrote once more, and make sure nothing is said twice.

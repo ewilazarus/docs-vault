@@ -16,6 +16,9 @@
 #   - a new journal day must be dated today, and a future journal day can't be written at
 #     all;
 #   - a new decision takes the next number, `Decisions/NNNNN-slug.md`, with `date:` today.
+# - PostToolUse on file writes runs the lint script on the note just written, and hands its
+#   errors back to Claude to fix while the note is still in hand. Warnings are left to
+#   /docs-vault:lint, since a note mid-way through a record run may not be finished yet.
 #
 # The history check enforces the shape of a change (only checkbox state and link targets
 # move), not its meaning: it doesn't know whether a box sits under `## Follow-ups`. The
@@ -83,8 +86,8 @@ deny() {
 }
 
 remind() {
-  jq -n --arg context "$1" \
-    '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $context}}'
+  jq -n --arg event "$event" --arg context "$1" \
+    '{hookSpecificOutput: {hookEventName: $event, additionalContext: $context}}'
   exit 0
 }
 
@@ -168,10 +171,34 @@ load_current() {
   current=${current%x}
 }
 
+# --- after a write -----------------------------------------------------------------------
+
+# Lints the note just written, and hands any errors back to Claude.
+lint_written() {
+  case "$rel" in *.md) ;; *) exit 0 ;; esac
+  local lint out errors
+  lint="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/skills/lint/scripts/lint.sh"
+  [ -f "$lint" ] || exit 0
+  out=$(bash "$lint" "$project/docs" --only "$rel")
+  errors=$(printf '%s\n' "$out" | grep '^| [0-9]* | error |' || true)
+  [ -n "$errors" ] || exit 0
+  remind "The lint script found errors in $rel after this write. Fix them now, in the same way as the rest of this change:
+
+| # | Severity | Where | Problem |
+|---|---|---|---|
+$errors"
+}
+
 # --- dispatch ----------------------------------------------------------------------------
 
 case "$event" in
-  PostToolUse) mark "$(skill_from "$skill_called")"; exit 0 ;;
+  PostToolUse)
+    case "$tool" in
+      Skill) mark "$(skill_from "$skill_called")"; exit 0 ;;
+      Edit | Write | MultiEdit) ;;
+      *) exit 0 ;;
+    esac
+    ;;
   UserPromptExpansion) mark "$(skill_from "$command_name")"; exit 0 ;;
   PreToolUse) ;;
   *) exit 0 ;;
@@ -181,6 +208,8 @@ rel=$(vault_relative "$target") || exit 0
 
 # Obsidian's own settings aren't notes, so neither the skills' rules nor their reminders apply.
 case "$rel" in .obsidian | .obsidian/*) exit 0 ;; esac
+
+[ "$event" != PostToolUse ] || lint_written
 
 case "$tool" in
   Read | Grep | Glob)

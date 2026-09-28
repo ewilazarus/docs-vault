@@ -218,6 +218,32 @@ check "adding one to a file that has some is denied" deny \
 check "a bare reference in today's journal is denied" deny \
   "$(edit_file "Journal/$today.md" "## Summary" $'## Summary\n\n- Settled §7.')"
 
+echo "vault_guard.sh: linting a written note"
+
+# written <path> <content>: puts the note on disk, then sends the PostToolUse of its Write.
+written() {
+  mkdir -p "$(dirname "$docs/$1")"
+  printf '%s' "$2" >"$docs/$1"
+  printf '%s' "$(event "$(jq -nc --arg p "$docs/$1" --arg c "$2" '{hook_event_name: "PostToolUse", tool_name: "Write", tool_input: {file_path: $p, content: $c}}')")" |
+    "$BASH" "$guard"
+}
+
+check "a clean note is quiet" "" "$(written Linted.md "See [[Legacy]].")"
+check "a warning alone is quiet" "" \
+  "$(written "Journal/$today.md" $'---\ndescription: "x"\n---\n\n## Summary\n\n- Done.\n\n## Follow-ups\n')"
+check "a note outside the vault is quiet" "" \
+  "$(printf '%s' "$(event "$(jq -nc --arg p "$project/README.md" '{hook_event_name: "PostToolUse", tool_name: "Write", tool_input: {file_path: $p}}')")" | "$BASH" "$guard")"
+check "an error is handed back as context" "\
+PostToolUse
+The lint script found errors in Linted.md after this write. Fix them now, in the same way as the rest of this change:
+
+| # | Severity | Where | Problem |
+|---|---|---|---|
+| 1 | error | \`Linted.md:1\` | Broken link \`[[Legacy#Missing]]\`: no heading \`Missing\` in \`Legacy.md\`. |
+| 2 | error | \`Linted.md:1\` | Broken link \`[[Nowhere]]\`: no file named \`Nowhere\`. |" \
+  "$(written Linted.md "See [[Nowhere]] and [[Legacy#Missing]]." | jq -r '.hookSpecificOutput | .hookEventName, .additionalContext')"
+check "another note's errors aren't reported" "" "$(written Other.md "Fine.")"
+
 echo "vault_guard.sh: failing open"
 
 out=$(printf 'not json' | "$BASH" "$guard" 2>/dev/null) && status=0 || status=$?

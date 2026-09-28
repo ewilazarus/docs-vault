@@ -117,6 +117,10 @@ Claude remembering to load them:
 - **Decisions** are created as `Decisions/NNNNN-slug.md`, taking the next number, with
   `date:` set to today in their frontmatter. One may be refined on the day it was made. After that, the same rule as a past journal day applies, because a changed
   mind is a new decision.
+- **Each note Claude writes is linted** straight after the write, with the `lint` script
+  limited to that note. Any errors, such as a broken link or a day without a Summary, go
+  back to Claude to fix while the note is still in hand. Warnings are left to
+  `/docs-vault:lint`, since a note may be only part-way written.
 - **Section references** are links. A write that adds a bare `§4.2` outside a link or code
   is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References
   already in a file don't count, so old notes can still be edited.
