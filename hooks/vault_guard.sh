@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Keep work on the docs/ vault going through the docs-vault skills.
 #
-# One script, three hook events:
+# One script, four hook events:
 #
 # - PostToolUse(Skill) and UserPromptExpansion note which docs-vault skills this session
 #   (or subagent) has loaded.
@@ -21,6 +21,10 @@
 #   /docs-vault:lint, since a note mid-way through a record run may not be finished yet.
 # - PostToolUse on Bash does the same after a git merge, pull, rebase or cherry-pick, for
 #   the notes it changed, since that is where two branches' decisions and links first meet.
+# - Stop reminds Claude, once, to consider `record` when the session loaded `recall`, then
+#   changed project files outside docs/, and `record` hasn't run since. Loading `record` or
+#   giving the reminder clears it, so it comes back only after new changes. It never fires
+#   while a stop hook is already active, and DOCS_VAULT_STOP_REMINDER=off turns it off.
 #
 # A new decision's number comes from the record skill's next-decision.sh, which also counts
 # the decisions on other branches.
@@ -49,6 +53,7 @@ fields=$(jq -r '@sh "
   command_name=\(.command_name // "")
   target=\(.tool_input.file_path // .tool_input.path // "")
   shell_command=\(.tool_input.command // "")
+  stop_active=\(.stop_hook_active // false)
 "' <<<"$input")
 eval "$fields"
 
@@ -81,7 +86,16 @@ mark() {
   mkdir -p "$state_dir"
   touch "$state_dir/$state_key.$1"
   find "$state_dir" -type f -mtime +7 -delete 2>/dev/null || true
+  # Recording covers the changes made so far, so the stop reminder waits for new ones.
+  [ "$1" != record ] || rm -f "$changed_marker"
 }
+
+# Project files changed outside docs/ since `record` last ran, by the session or any of its
+# subagents, since their work is the session's to record.
+changed_marker="$state_dir/$(printf '%s' "$session" | tr -c 'A-Za-z0-9_.-' '_').changed"
+
+# The project keeps a docs-vault vault.
+has_vault() { [ -f "$project/docs/Conventions.md" ] || [ -d "$project/docs/Journal" ]; }
 
 # --- responses ---------------------------------------------------------------------------
 
@@ -227,9 +241,42 @@ $errors
 Tell the user. A decision number shared by two notes means two branches each took the next one: offer to renumber the newer decision with the record skill's next-decision.sh and update the links to it, but ask first, since other branches may link to it. Fix broken links by piping them to the note's new name."
 }
 
+# --- the stop reminder -------------------------------------------------------------------
+
+# Notes that Claude changed a project file outside docs/.
+note_change() {
+  local path root
+  has_vault || return 0
+  [ -n "$target" ] || return 0
+  path=$(resolve "$target")
+  # A file in a folder that doesn't exist keeps its path unresolved, so try both spellings.
+  for root in "$(cd "$project" && pwd -P)" "$project"; do
+    case "$path" in
+      "$root"/.git/*) return 0 ;;
+      "$root"/*) mkdir -p "$state_dir"; touch "$changed_marker"; return 0 ;;
+    esac
+  done
+  return 0
+}
+
+# At Stop: asks Claude, once, to consider record, if the session changed project files
+# after reading the vault and hasn't recorded since.
+stop_reminder() {
+  [ "${DOCS_VAULT_STOP_REMINDER:-on}" != off ] || exit 0
+  [ "$stop_active" != true ] || exit 0
+  [ -e "$changed_marker" ] || exit 0
+  has_vault || exit 0
+  loaded recall || exit 0
+  rm -f "$changed_marker"
+  jq -n --arg reason "Before finishing: this session read the docs vault and then changed project files, and /docs-vault:record hasn't run since. Load it if the work changed something outside the repo, made a choice whose reason will matter later, left work unfinished, finished or reopened a follow-up, or showed a note to be wrong. If none of that is true, routine code work that git explains needs no record: say in one line that there is nothing to record, and stop." \
+    '{decision: "block", reason: $reason}'
+  exit 0
+}
+
 # --- dispatch ----------------------------------------------------------------------------
 
 case "$event" in
+  Stop) stop_reminder ;;
   PostToolUse)
     case "$tool" in
       Skill) mark "$(skill_from "$skill_called")"; exit 0 ;;
@@ -243,7 +290,10 @@ case "$event" in
   *) exit 0 ;;
 esac
 
-rel=$(vault_relative "$target") || exit 0
+if ! rel=$(vault_relative "$target"); then
+  [ "$event" != PostToolUse ] || note_change
+  exit 0
+fi
 
 # Obsidian's own settings aren't notes, so neither the skills' rules nor their reminders apply.
 case "$rel" in .obsidian | .obsidian/*) exit 0 ;; esac

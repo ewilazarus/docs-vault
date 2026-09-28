@@ -126,6 +126,12 @@ Claude remembering to load them:
   `cherry-pick`, the notes it changed in `docs/` are linted the same way. That is where a
   decision number taken on two branches, or a link to a note renamed on the other side,
   first shows up. Claude reports it, and asks before renumbering a decision.
+- **A reminder to record, before finishing.** If a session read the vault with `recall`,
+  then changed project files outside `docs/`, and `record` hasn't run since, Claude is
+  asked once, as it stops, whether any of it is worth recording. Often the answer is no,
+  and it says so in a line. Loading `record` or getting the reminder clears it, so it
+  comes back only after new changes. To turn it off, set `DOCS_VAULT_STOP_REMINDER=off`,
+  for example in the `env` of `.claude/settings.local.json`.
 - **Section references** are links. A write that adds a bare `§4.2` outside a link or code
   is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References
   already in a file don't count, so old notes can still be edited.

@@ -17,6 +17,13 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
+        ]
+      }
+    ],
     "UserPromptExpansion": [
       {
         "matcher": "",

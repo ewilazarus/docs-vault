@@ -244,6 +244,54 @@ The lint script found errors in Linted.md after this write. Fix them now, in the
   "$(written Linted.md "See [[Nowhere]] and [[Legacy#Missing]]." | jq -r '.hookSpecificOutput | .hookEventName, .additionalContext')"
 check "another note's errors aren't reported" "" "$(written Other.md "Fine.")"
 
+echo "vault_guard.sh: the stop reminder"
+
+# stop [active]: sends a Stop event, and prints "remind" when Claude is asked to go on.
+stop() {
+  local out
+  out=$(jq -nc --arg s "$session" --arg cwd "$project" --argjson active "${1:-false}" \
+    '{session_id: $s, cwd: $cwd, hook_event_name: "Stop", stop_hook_active: $active}' | "$BASH" "$guard")
+  if [ -z "$out" ]; then echo quiet
+  elif [ "$(jq -r '.decision' <<<"$out")" = block ]; then echo remind
+  else echo "unexpected: $out"; fi
+}
+
+# changed <path>: sends the PostToolUse of an Edit to a file.
+changed() {
+  event "$(jq -nc --arg p "$1" '{hook_event_name: "PostToolUse", tool_name: "Edit", tool_input: {file_path: $p, old_string: "a", new_string: "b"}}')" |
+    "$BASH" "$guard" >/dev/null
+}
+
+session=stop1
+check "a session that changed nothing stops quietly" quiet "$(stop)"
+changed "$project/src/app.sh"
+check "changes without reading the vault stop quietly" quiet "$(stop)"
+load_skill docs-vault:recall
+check "after reading the vault, changes get a reminder" remind "$(stop)"
+check "only once" quiet "$(stop)"
+changed "$project/src/app.sh"
+check "never while a stop hook is already active" quiet "$(stop true)"
+check "and new changes get a new reminder" remind "$(stop)"
+
+changed "$project/src/app.sh"
+load_skill docs-vault:record
+check "recording clears it" quiet "$(stop)"
+
+changed "$docs/Notes.md"
+changed "$tmp/elsewhere/file.txt"
+changed "$project/.git/config"
+check "notes, files outside the project and .git don't count" quiet "$(stop)"
+
+agent=sub9
+changed "$project/src/app.sh"
+agent=""
+check "a subagent's changes count for the session" remind "$(stop)"
+
+changed "$project/src/app.sh"
+check "DOCS_VAULT_STOP_REMINDER=off turns it off" quiet "$(DOCS_VAULT_STOP_REMINDER=off stop)"
+
+session=s4
+
 echo "vault_guard.sh: branches and merges"
 
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
