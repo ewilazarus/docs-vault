@@ -1,5 +1,8 @@
 # docs-vault
 
+> **Archived.** docs-vault is continued as [neoarchivist](https://github.com/ewilazarus/neoarchivist),
+> rebuilt around one agent and a Rust CLI. Install that instead.
+
 A Claude Code plugin for projects that keep a `docs/` folder as an Obsidian vault. One
 agent, the **vault-keeper**, keeps the vault, and it gives the project three kinds of
 durable project memory:
