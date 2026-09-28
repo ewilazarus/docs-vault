@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/lint/scripts/lint.sh: what it reports, and how it prints.
+# Tests for scripts/lint.sh: what it reports, and how it prints.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-lint="$repo/skills/lint/scripts/lint.sh"
+lint="$repo/scripts/lint.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 export DOCS_VAULT_TODAY=2026-09-28

@@ -47,7 +47,11 @@ The team already runs it. See [[Databases]].
 EOF
 
 session=s1
-agent=""
+# The agent a tool call comes from: "" for the main session, or an agent_id with its type.
+agent="" agent_type=""
+as_main() { agent="" agent_type=""; }
+as_keeper() { agent=keeper1 agent_type=docs-vault:vault-keeper; }
+as_agent() { agent=$1 agent_type=$2; }
 
 # run <json>: feeds one hook event to the guard and prints its decision: "deny", "remind",
 # or "allow" when it prints nothing.
@@ -68,15 +72,8 @@ run() {
 # event <json fields>: common fields for this session and agent, merged with the given ones.
 event() {
   jq -nc --arg s "$session" --arg a "$agent" --arg cwd "$project" --argjson extra "$1" \
-    '{session_id: $s, cwd: $cwd} + (if $a == "" then {} else {agent_id: $a} end) + $extra'
-}
-
-load_skill() {
-  run "$(event "$(jq -nc --arg k "$1" '{hook_event_name: "PostToolUse", tool_name: "Skill", tool_input: {skill: $k}}')")" >/dev/null
-}
-
-load_command() {
-  run "$(event "$(jq -nc --arg k "$1" '{hook_event_name: "UserPromptExpansion", command_name: $k}')")" >/dev/null
+    --arg t "$agent_type" \
+    '{session_id: $s, cwd: $cwd} + (if $a == "" then {} else {agent_id: $a, agent_type: $t} end) + $extra'
 }
 
 read_file() {
@@ -91,37 +88,25 @@ edit_file() {
   run "$(event "$(jq -nc --arg p "$docs/$1" --arg o "$2" --arg n "$3" '{hook_event_name: "PreToolUse", tool_name: "Edit", tool_input: {file_path: $p, old_string: $o, new_string: $n}}')")"
 }
 
-echo "vault_guard.sh: loading skills"
+echo "vault_guard.sh: only the keeper touches docs/"
 
-check "reading docs without recall reminds" remind "$(read_file Conventions.md)"
-check "writing docs without record is denied" deny "$(write_file Notes.md "x")"
-check "reading .obsidian/ doesn't remind" allow "$(read_file .obsidian/app.json)"
-check "writing .obsidian/ without record is allowed" allow "$(write_file .obsidian/app.json "{}")"
+check "the main session can't read docs/" deny "$(read_file Conventions.md)"
+check "or write it" deny "$(write_file Notes.md "x")"
+check "and is sent to the keeper" yes \
+  "$(printf '%s' "$(event "$(jq -nc --arg p "$docs/Notes.md" '{hook_event_name: "PreToolUse", tool_name: "Read", tool_input: {file_path: $p}}')")" |
+     "$BASH" "$guard" | jq -r .hookSpecificOutput.permissionDecisionReason | grep -q 'docs-vault:keeper-contract' && echo yes)"
+check "docs/.obsidian/ is settings, and left alone" allow "$(read_file .obsidian/app.json)"
 check "files outside docs/ are ignored" allow \
   "$(run "$(event "$(jq -nc --arg p "$project/src/main.sh" '{hook_event_name: "PreToolUse", tool_name: "Write", tool_input: {file_path: $p, content: "x"}}')")")"
-
-load_skill docs-vault:recall
-check "reading docs with recall loaded is quiet" allow "$(read_file Conventions.md)"
-
-load_skill docs-vault:record
-check "writing a note with the plugin's record loaded" allow "$(write_file Notes.md "x")"
-
-agent=sub1
-check "a subagent doesn't inherit the parent's record" deny "$(write_file Notes.md "x")"
-load_skill docs-vault:record
-check "a subagent that loads record may write" allow "$(write_file Notes.md "x")"
-agent=""
-
-session=s2
-load_command docs-vault-record
-check "a copied record skill counts" allow "$(write_file Notes.md "x")"
-
-session=s3
-load_command /docs-vault:init
-check "init counts as a writer" allow "$(write_file "Journal/$today.md" "## Summary")"
+as_agent sub1 general-purpose
+check "another subagent can't read docs/" deny "$(read_file Conventions.md)"
+as_agent sub2 vault-keeper
+check "a project-level copy of the keeper can" allow "$(read_file Conventions.md)"
+as_keeper
+check "the keeper reads" allow "$(read_file Conventions.md)"
+check "and writes" allow "$(write_file Notes.md "x")"
 
 session=s4
-load_skill docs-vault:record
 
 echo "vault_guard.sh: today's journal"
 
@@ -244,6 +229,109 @@ The lint script found errors in Linted.md after this write. Fix them now, in the
   "$(written Linted.md "See [[Nowhere]] and [[Legacy#Missing]]." | jq -r '.hookSpecificOutput | .hookEventName, .additionalContext')"
 check "another note's errors aren't reported" "" "$(written Other.md "Fine.")"
 
+echo "vault_guard.sh: the contract"
+
+# request <tool> <message> [subagent type]: sends the PreToolUse of an Agent or SendMessage
+# call, and prints the decision.
+request() {
+  local input
+  if [ "$1" = Agent ]; then
+    input=$(jq -nc --arg p "$2" --arg t "${3:-docs-vault:vault-keeper}" '{hook_event_name: "PreToolUse", tool_name: "Agent", tool_input: {subagent_type: $t, prompt: $p}}')
+  else
+    input=$(jq -nc --arg m "$2" '{hook_event_name: "PreToolUse", tool_name: "SendMessage", tool_input: {to: "keeper1", message: $m}}')
+  fi
+  run "$(event "$input")"
+}
+
+# subagent <event> <type> <last message> [active]: sends a SubagentStart or SubagentStop, and
+# prints the hook's JSON output.
+subagent() {
+  jq -nc --arg s "$session" --arg e "$1" --arg t "$2" --arg m "${3:-}" --argjson active "${4:-false}" \
+    '{session_id: $s, hook_event_name: $e, agent_id: "k9", agent_type: $t, last_assistant_message: $m, stop_hook_active: $active}' |
+    "$BASH" "$guard"
+}
+
+session=contract1
+as_main
+check "a request that fits goes through" allow "$(request Agent '{"kind": "ask", "question": "Where do backups go?"}')"
+check "one in a json fence too" allow "$(request Agent '```json
+{"kind": "record", "open": [{"todo": "Verify restore", "done_when": "A file restores"}]}
+```')"
+check "prose is refused" deny "$(request Agent 'Please record that we chose restic.')"
+printf '%s\n' '{"kind": "record", "decided": [{"what": "Use restic"}]}' >"$tmp/no-why.json"
+check "a decision without its why is refused, saying so" yes \
+  "$(event "$(jq -nc --rawfile p "$tmp/no-why.json" '{hook_event_name: "PreToolUse", tool_name: "Agent", tool_input: {subagent_type: "docs-vault:vault-keeper", prompt: $p}}')" |
+     "$BASH" "$guard" | jq -r .hookSpecificOutput.permissionDecisionReason | grep -qF '"decided"[0] needs "why"' && echo yes)"
+check "other agents' tasks aren't checked" allow "$(request Agent 'Find the flaky test.' general-purpose)"
+check "an answers message to the keeper is checked" deny "$(request SendMessage '{"kind": "answers", "answers": []}')"
+check "and goes through when it fits" allow "$(request SendMessage '{"kind": "answers", "answers": ["Yes"]}')"
+check "a plain message to another agent isn't" allow "$(request SendMessage 'Carry on with the refactor.')"
+
+rules=$(subagent SubagentStart docs-vault:vault-keeper | jq -r .hookSpecificOutput.additionalContext)
+check "the keeper starts with its rules" yes \
+  "$(printf '%s' "$rules" | grep -q '^# The recall rules' && printf '%s' "$rules" | grep -q '^# The record rules' && echo yes)"
+check "with the plugin's scripts filled in" "$repo/scripts/next-decision.sh" \
+  "$(printf '%s' "$rules" | grep -o "$repo/scripts/next-decision.sh" | head -n 1)"
+check "and no placeholder left" 0 "$(printf '%s' "$rules" | grep -c 'CLAUDE_PLUGIN_ROOT' || true)"
+check "other agents start without them" "" "$(subagent SubagentStart general-purpose)"
+
+check "a reply that fits lets the keeper stop" "" \
+  "$(subagent SubagentStop docs-vault:vault-keeper '{"status": "completed", "reason": "Nothing to record."}')"
+check "one that doesn't sends it back, saying why" "block yes" \
+  "$(subagent SubagentStop docs-vault:vault-keeper 'I wrote the journal.' | jq -r '"\(.decision) \(.reason | test("one JSON object") | if . then "yes" else "no" end)"')"
+check "but only once" "" "$(subagent SubagentStop docs-vault:vault-keeper 'I wrote the journal.' true)"
+check "other agents' replies aren't checked" "" "$(subagent SubagentStop general-purpose 'Done.')"
+
+# subagent_as <agent_id> <event> <type> [last message]: the same, for a given agent_id.
+subagent_as() {
+  jq -nc --arg s "$session" --arg id "$1" --arg e "$2" --arg t "$3" --arg m "${4:-}" \
+    '{session_id: $s, hook_event_name: $e, agent_id: $id, agent_type: $t, last_assistant_message: $m, stop_hook_active: false}' |
+    "$BASH" "$guard"
+}
+
+session=contract2
+check "a keeper started by a slash command is told to answer in Markdown" yes \
+  "$(subagent_as cmd1 SubagentStart docs-vault:vault-keeper | jq -r .hookSpecificOutput.additionalContext | head -n 1 | grep -q "slash command" && echo yes)"
+check "and its Markdown reply isn't held to the contract" "" \
+  "$(subagent_as cmd1 SubagentStop docs-vault:vault-keeper '| # | Raised | Todo |')"
+request Agent '{"kind": "ask", "question": "One?"}' >/dev/null
+request Agent '{"kind": "ask", "question": "Two?"}' >/dev/null
+subagent_as par1 SubagentStart docs-vault:vault-keeper >/dev/null
+subagent_as par2 SubagentStart docs-vault:vault-keeper >/dev/null
+check "two requests sent in parallel start two contract keepers" "block block" \
+  "$(subagent_as par1 SubagentStop docs-vault:vault-keeper 'prose' | jq -r .decision) $(subagent_as par2 SubagentStop docs-vault:vault-keeper 'prose' | jq -r .decision)"
+subagent_as cmd2 SubagentStart docs-vault:vault-keeper >/dev/null
+check "and a command started after them is still a command" "" \
+  "$(subagent_as cmd2 SubagentStop docs-vault:vault-keeper 'Markdown for the user.')"
+
+echo "vault_guard.sh: the keeper's commands"
+
+# shell_as <command>: sends the PreToolUse of a Bash call, and prints "allow" when the hook
+# approves it, or "ask" when it leaves it to the usual permission check.
+shell_as() {
+  local out
+  out=$(event "$(jq -nc --arg c "$1" '{hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: {command: $c}}')" | "$BASH" "$guard")
+  [ "$(jq -r '.hookSpecificOutput.permissionDecision // empty' <<<"$out" 2>/dev/null)" = allow ] && echo allow || echo ask
+}
+
+as_keeper
+check "a plugin script is approved" allow "$(shell_as "$repo/scripts/todos.sh")"
+check "quoted, with arguments" allow "$(shell_as "\"$repo/scripts/next-decision.sh\" \"Use restic\"")"
+check "through bash" allow "$(shell_as "bash $repo/scripts/lint.sh --only Journal/2026-09-28.md")"
+check "read-only git" allow "$(shell_as "git log --stat -5")"
+check "git -C, too" allow "$(shell_as "git -C $project diff")"
+check "date" allow "$(shell_as "date +%F")"
+check "a script outside the plugin isn't" ask "$(shell_as "$repo/../other/scripts/x.sh")"
+check "a chained command isn't" ask "$(shell_as "$repo/scripts/todos.sh; rm -rf docs")"
+check "a substitution isn't" ask "$(shell_as "git log \$(rm -rf docs)")"
+check "a redirection isn't" ask "$(shell_as "git diff > docs/x.md")"
+check "git that writes isn't" ask "$(shell_as "git commit -am x")"
+check "git diff --output isn't" ask "$(shell_as "git diff --output=docs/x.md")"
+as_main
+check "nor anything from the main session" ask "$(shell_as "$repo/scripts/todos.sh")"
+as_agent sub3 general-purpose
+check "or another agent" ask "$(shell_as "git status")"
+
 echo "vault_guard.sh: the stop reminder"
 
 # stop [active]: sends a Stop event, and prints "remind" when Claude is asked to go on.
@@ -263,29 +351,35 @@ changed() {
 }
 
 session=stop1
+as_main
 check "a session that changed nothing stops quietly" quiet "$(stop)"
 changed "$project/src/app.sh"
-check "changes without reading the vault stop quietly" quiet "$(stop)"
-load_skill docs-vault:recall
-check "after reading the vault, changes get a reminder" remind "$(stop)"
+check "changes without using the keeper stop quietly" quiet "$(stop)"
+request Agent '{"kind": "ask", "question": "How is it deployed?"}' >/dev/null
+check "after using the keeper, changes get a reminder" remind "$(stop)"
 check "only once" quiet "$(stop)"
 changed "$project/src/app.sh"
 check "never while a stop hook is already active" quiet "$(stop true)"
 check "and new changes get a new reminder" remind "$(stop)"
 
 changed "$project/src/app.sh"
-load_skill docs-vault:record
-check "recording clears it" quiet "$(stop)"
+request Agent '{"kind": "record", "changed": ["Deployed to the new host"]}' >/dev/null
+check "a record request clears it" quiet "$(stop)"
+
+as_keeper
+changed "$project/CLAUDE.md"
+as_main
+check "the keeper's own writes outside docs/ don't count" quiet "$(stop)"
 
 changed "$docs/Notes.md"
 changed "$tmp/elsewhere/file.txt"
 changed "$project/.git/config"
 check "notes, files outside the project and .git don't count" quiet "$(stop)"
 
-agent=sub9
+as_agent sub9 general-purpose
 changed "$project/src/app.sh"
-agent=""
-check "a subagent's changes count for the session" remind "$(stop)"
+as_main
+check "another subagent's changes count for the session" remind "$(stop)"
 
 changed "$project/src/app.sh"
 check "DOCS_VAULT_STOP_REMINDER=off turns it off" quiet "$(DOCS_VAULT_STOP_REMINDER=off stop)"
@@ -293,6 +387,8 @@ check "DOCS_VAULT_STOP_REMINDER=off turns it off" quiet "$(DOCS_VAULT_STOP_REMIN
 session=s4
 
 echo "vault_guard.sh: branches and merges"
+
+as_keeper
 
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t

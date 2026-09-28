@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/recall/scripts/obsidian.sh, against a fake `obsidian` CLI and `pgrep`.
+# Tests for scripts/obsidian.sh, against a fake `obsidian` CLI and `pgrep`.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-script="$repo/skills/recall/scripts/obsidian.sh"
+script="$repo/scripts/obsidian.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 

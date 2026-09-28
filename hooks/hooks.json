@@ -1,9 +1,23 @@
 {
-  "description": "Route work on docs/ through the recall and record skills, and keep past journal days and decisions unchanged except for checkbox state and link targets, and lint each note Claude writes.",
+  "description": "Keep the docs/ vault behind the vault-keeper agent: give it its rules, check every request and reply against its contract, refuse docs/ to anyone else, keep past journal days and decisions unchanged except for checkbox state and link targets, lint each note written and each merge, and remind Claude to record work before it stops.",
   "hooks": {
+    "SubagentStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
-        "matcher": "Read|Grep|Glob|Edit|Write|MultiEdit",
+        "matcher": "Read|Grep|Glob|Edit|Write|MultiEdit|Agent|SendMessage|Bash",
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
         ]
@@ -11,7 +25,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Skill|Edit|Write|MultiEdit|Bash",
+        "matcher": "Edit|Write|MultiEdit|Bash",
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
         ]
@@ -19,14 +33,6 @@
     ],
     "Stop": [
       {
-        "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
-        ]
-      }
-    ],
-    "UserPromptExpansion": [
-      {
-        "matcher": "",
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/vault_guard.sh\"", "timeout": 10 }
         ]

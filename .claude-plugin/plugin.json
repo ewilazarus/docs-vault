@@ -1,7 +1,7 @@
 {
   "name": "docs-vault",
-  "version": "0.5.0",
-  "description": "Seven skills for a project's docs/ Obsidian vault: init bootstraps it, recall reads it, record writes it, todos lists the open follow-ups, lint checks it for broken links and malformed journal days and decisions, graph colour-codes the graph view, and preset saves and applies your Obsidian settings. The vault keeps notes on what is true now, a curated daily journal of what happened with plain follow-up checkboxes, and a Decisions folder for why, and leaves everything else to the project's Conventions.md. Requires kepano/obsidian-skills.",
+  "version": "0.6.0",
+  "description": "Keeps a project's docs/ Obsidian vault behind one agent, the vault-keeper, so the main conversation's context stays free: Claude sends it JSON requests to look things up or record work, checked by hooks against a contract. The vault keeps notes on what is true now, a curated daily journal with plain follow-up checkboxes, and a Decisions folder for why, and leaves everything else to the project's Conventions.md. Commands: init, ask, record, todos, lint, graph and preset. Requires kepano/obsidian-skills.",
   "author": {
     "name": "ewilazarus"
   },

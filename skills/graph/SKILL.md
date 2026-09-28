@@ -1,10 +1,19 @@
 ---
 name: graph
 description: Colour-code the Obsidian graph view of this project's docs/ vault, one colour per kind of note, by writing colour groups to docs/.obsidian/graph.json. Use when the user runs /docs-vault:graph or asks to colour, colour-code or recolour the graph view, or to update it after the vault's layout changes.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/graph.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
+disable-model-invocation: true
+context: fork
+agent: docs-vault:vault-keeper
+background: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/graph.sh *), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh *)
 ---
 
 # Colour the graph view
+
+You're running this as the vault-keeper, for the user's `/docs-vault:graph` command. Your
+final message is for the user to read, in Markdown, not JSON. Where these steps say to ask
+the user, end your reply with the numbered questions, and say they can answer in the
+conversation for Claude to pass on; carry on when their answers arrive.
 
 The graph view's colours live in `colorGroups` in `docs/.obsidian/graph.json`. This skill
 sets them from how the vault is organised, so each kind of note reads at a glance.
@@ -12,8 +21,8 @@ sets them from how the vault is organised, so each kind of note reads at a glanc
 A bundled script reads and writes them, so you choose the groups and it does the rest:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/graph.sh show
-${CLAUDE_SKILL_DIR}/scripts/graph.sh set [--replace | --add] '<query>=#RRGGBB'...
+${CLAUDE_PLUGIN_ROOT}/scripts/graph.sh show
+${CLAUDE_PLUGIN_ROOT}/scripts/graph.sh set [--replace | --add] '<query>=#RRGGBB'...
 ```
 
 Run it from the project root.
@@ -24,7 +33,7 @@ Run it from the project root.
 sed -n '/^## Layout/,/^## /p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
 fd -e md -d 1 . docs 2>/dev/null || find docs -maxdepth 1 -name '*.md'
-${CLAUDE_SKILL_DIR}/scripts/graph.sh show
+${CLAUDE_PLUGIN_ROOT}/scripts/graph.sh show
 pgrep -xq Obsidian && echo "Obsidian is running"
 ```
 
@@ -56,7 +65,7 @@ Show the user the mapping as a table (colour, query, what it covers) before writ
 Once the user agrees, pass the groups to the script in order, as `query=#RRGGBB`:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/graph.sh set \
+${CLAUDE_PLUGIN_ROOT}/scripts/graph.sh set \
   'file:Home OR file:Conventions=#F5A623' 'path:Journal=#8A8F98' \
   'path:Decisions=#D68A46' 'path:Concepts=#4C8BF5'
 ```
@@ -78,11 +87,11 @@ Obsidian reads `graph.json` only at startup, and writes its in-memory settings b
 they change. If Obsidian is running, the new colours won't show until it reloads, and
 they're lost if the user touches a graph setting in the meantime.
 
-Offer to reload it. With the user's OK, run the recall skill's script, which reloads only
+Offer to reload it. With the user's OK, run the obsidian script, which reloads only
 once it has checked that the Obsidian CLI targets this vault:
 
 ```bash
-${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload
+${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh reload
 ```
 
 If it didn't reload, pass on what it says. Afterwards, run `graph.sh show` to check that

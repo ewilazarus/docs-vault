@@ -1,10 +1,19 @@
 ---
 name: preset
 description: Save the Obsidian settings of this project's docs/ vault as a named preset, or apply a saved preset so a new vault looks and behaves like one you already have. Settings only, never notes or vault structure. Use when the user runs /docs-vault:preset, or asks to save, capture, reuse, copy or apply their Obsidian settings, set-up or look to another vault.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preset.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
+disable-model-invocation: true
+context: fork
+agent: docs-vault:vault-keeper
+background: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/preset.sh *), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh *)
 ---
 
 # Obsidian setting presets
+
+You're running this as the vault-keeper, for the user's `/docs-vault:preset` command. Your
+final message is for the user to read, in Markdown, not JSON. Where these steps say to ask
+the user, end your reply with the numbered questions, and say they can answer in the
+conversation for Claude to pass on; carry on when their answers arrive.
 
 A preset is a snapshot of a vault's Obsidian settings, kept outside any project. The
 plugin ships no opinions of its own. Whatever a preset holds, the user chose.
@@ -12,10 +21,10 @@ plugin ships no opinions of its own. Whatever a preset holds, the user chose.
 A bundled script does the saving and merging, so both behave the same way every time:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/preset.sh list
-${CLAUDE_SKILL_DIR}/scripts/preset.sh save  <name> [vault]
-${CLAUDE_SKILL_DIR}/scripts/preset.sh plan  <name> [vault]
-${CLAUDE_SKILL_DIR}/scripts/preset.sh apply <name> [vault] [--prefer preset]
+${CLAUDE_PLUGIN_ROOT}/scripts/preset.sh list
+${CLAUDE_PLUGIN_ROOT}/scripts/preset.sh save  <name> [vault]
+${CLAUDE_PLUGIN_ROOT}/scripts/preset.sh plan  <name> [vault]
+${CLAUDE_PLUGIN_ROOT}/scripts/preset.sh apply <name> [vault] [--prefer preset]
 ```
 
 Run it from the project root. The vault defaults to `docs`. Presets live in
@@ -63,7 +72,7 @@ Never notes, folders or `Conventions.md`, and never which notes are open.
    passes:
 
    ```bash
-   ${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh check
+   ${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh check
    obsidian plugin:install id=<id>
    obsidian plugin:enable id=<id> filter=community
    ```
@@ -77,7 +86,7 @@ Never notes, folders or `Conventions.md`, and never which notes are open.
    in-memory settings back over them when a setting changes. It rewrites
    `workspace.json` whenever a pane moves, so reload promptly after applying a layout.
    Offer it, and with the user's OK run
-   `${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload`. It reloads only after
+   `${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh reload`. It reloads only after
    checking that the CLI targets this vault, and says what to do if it didn't.
 
 ## Nothing to record

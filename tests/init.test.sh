@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Tests for skills/init/scripts/init.sh: what plan reports, what apply writes, and what it keeps.
+# Tests for scripts/init.sh: what plan reports, what apply writes, and what it keeps.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-init="$repo/skills/init/scripts/init.sh"
-section="$repo/skills/init/assets/CLAUDE-section.md"
+init="$repo/scripts/init.sh"
+section="$repo/assets/CLAUDE-section.md"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -165,7 +165,7 @@ check "a plan with --checks copies the scripts, and adds the hook and the workfl
   "$(run "$p" plan --checks)"
 run "$p" apply --checks >/dev/null
 check "the copies match the plugin's" "same" \
-  "$(cmp -s "$p/.docs-vault/history.sh" "$repo/skills/lint/scripts/history.sh" && [ -x "$p/.docs-vault/check.sh" ] && echo same)"
+  "$(cmp -s "$p/.docs-vault/history.sh" "$repo/scripts/history.sh" && [ -x "$p/.docs-vault/check.sh" ] && echo same)"
 check "a second run changes nothing" \
   "Nothing to change: the project already has everything init sets up." "$(run "$p" apply --checks)"
 

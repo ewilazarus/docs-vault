@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/todos/scripts/todos.sh: which boxes become rows, and how they print.
+# Tests for scripts/todos.sh: which boxes become rows, and how they print.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-todos="$repo/skills/todos/scripts/todos.sh"
+todos="$repo/scripts/todos.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 

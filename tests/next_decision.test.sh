@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/record/scripts/next-decision.sh: the number, across branches, and the slug.
+# Tests for scripts/next-decision.sh: the number, across branches, and the slug.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-next="$repo/skills/record/scripts/next-decision.sh"
+next="$repo/scripts/next-decision.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1

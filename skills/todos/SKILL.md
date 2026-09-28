@@ -1,10 +1,19 @@
 ---
 name: todos
 description: List every open follow-up in this project's docs/ journal as a table, with the day it was raised, its text and its sub-items, and recommend the easiest one to do next. Use when the user runs /docs-vault:todos or asks what's open, what's left, what to pick up next, or for the TODO list or backlog.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/todos.sh), Read, Grep, Glob, Bash(rg *), Bash(fd *)
+disable-model-invocation: true
+context: fork
+agent: docs-vault:vault-keeper
+background: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/todos.sh), Read, Grep, Glob, Bash(rg *), Bash(fd *)
 ---
 
 # Open follow-ups
+
+You're running this as the vault-keeper, for the user's `/docs-vault:todos` command. Your
+final message is for the user to read, in Markdown, not JSON. Where these steps say to ask
+the user, end your reply with the numbered questions, and say they can answer in the
+conversation for Claude to pass on; carry on when their answers arrive.
 
 There is no todo store. The TODO list is derived from the journal: every unticked top-level
 `- [ ]` box under a `## Follow-ups` heading in `docs/Journal/` is one row, oldest day first,
@@ -12,7 +21,7 @@ in the order the boxes appear. Nested boxes are that row's sub-items, and boxes 
 else are ordinary checklists. A script has already collected them, so the list doesn't
 depend on judgement. Here is its output:
 
-!`${CLAUDE_SKILL_DIR}/scripts/todos.sh`
+!`${CLAUDE_PLUGIN_ROOT}/scripts/todos.sh`
 
 ## 1. Show the list
 
@@ -45,6 +54,7 @@ which item is closest and what it is waiting on.
 
 ## 3. Stop
 
-Don't start the work or tick any box. Wait for the user to pick. Finishing a follow-up is
-the `record` skill's job: tick the box in the day that raised it, mention it in today's
-journal if finishing it was meaningful, and rewrite any note whose facts changed.
+Don't start the work or tick any box. The user picks, and the main agent does the work.
+Finishing a follow-up comes back to you later as a `record` request: tick the box in the
+day that raised it, mention it in today's journal if finishing it was meaningful, and
+rewrite any note whose facts changed.

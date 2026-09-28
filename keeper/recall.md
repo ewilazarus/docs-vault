@@ -1,16 +1,10 @@
----
-name: recall
-description: Look things up in this project's docs/ folder, an Obsidian vault of notes on what is true now, a daily journal of what meaningful things happened and what was left open, and decision notes on why important choices were made. Use before any work the vault documents, and whenever the user asks how something works here, what happened, what was decided, why something is the way it is, or what is still open, or mentions "the docs", "the vault", "the journal" or "decisions". Read-only; hands over to the record skill once there is something to write down.
-allowed-tools: Read, Grep, Glob, Bash(rg *), Bash(fd *), Bash(${CLAUDE_SKILL_DIR}/scripts/obsidian.sh check), Bash(obsidian read *), Bash(obsidian search *), Bash(obsidian search:context *), Bash(obsidian file *), Bash(obsidian tasks *), Bash(obsidian backlinks *)
----
-
 # Recall from the docs vault
 
-`docs/` is an Obsidian vault. Every path below is relative to it. This skill **only reads**.
-Writing belongs to the `record` skill, and the handoff at the end says when to load it.
+`docs/` is an Obsidian vault. Every path below is relative to it. These are your rules for
+an `ask`: **only read**. Writing is for a `record` request, under the record rules.
 
-This skill needs kepano's `obsidian-markdown`, `obsidian-bases` and `obsidian-cli` skills.
-They own the syntax and the tooling, so use them instead of guessing.
+kepano's `obsidian-markdown`, `obsidian-bases` and `obsidian-cli` skills own the syntax and
+the tooling. Load them through the Skill tool when you need them, instead of guessing.
 
 ## First, read the project's conventions
 
@@ -88,7 +82,7 @@ named `docs`, so `vault=docs` is ambiguous, and by default the CLI targets which
 was focused last. Before the first query in a session, check it with the bundled script:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/obsidian.sh check
+${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh check
 ```
 
 It compares the vault the CLI reports with this project's `docs/`, symlinks resolved. If
@@ -114,19 +108,8 @@ fd -F "Connection pool.md" docs/          # where a [[link]] actually lives
 
 Note names often contain spaces, so quote them.
 
-## Hand over to `record`
+## Gaps are findings
 
-**Load `/docs-vault:record` before calling the work done** (`/docs-vault-record` if the
-skills were copied into `.claude/skills/`) as soon as any of these is
-true:
-
-- you changed something outside the repo, such as a deployed system, a service, a setting
-  or data
-- you or the user made a choice whose reason will matter later, including a decision
-  *not* to do something
-- work was left unfinished, or an open follow-up was finished or reopened
-- something tried and abandoned would otherwise be tried again
-- a note turned out to be wrong, missing or out of date
-
-If none of these is true, there is nothing to write, so don't load it. Routine code work
-that git explains needs no record.
+When answering shows that a note is missing, wrong or out of date, say so in the reply's
+`disagreements`. Don't fix it during an `ask`: the main agent decides whether to send a
+`record` request.

@@ -269,9 +269,8 @@ gitignore() {
 
 # The lint skill's scripts, in the plugin or in a copied docs-vault-lint skill.
 lint_scripts=""
-for dir in "$(dirname "$0")/../../lint/scripts" "$(dirname "$0")/../../docs-vault-lint/scripts"; do
-  [ -f "$dir/check.sh" ] && { lint_scripts=$(cd "$dir" && pwd); break; }
-done
+dir="$(dirname "$0")"
+[ -f "$dir/check.sh" ] && lint_scripts=$(cd "$dir" && pwd)
 
 pre_commit='#!/bin/sh
 # docs-vault: check the docs vault before each commit. Skip once with --no-verify.

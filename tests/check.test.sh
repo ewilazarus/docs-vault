@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/lint/scripts/history.sh and check.sh, on real git repositories.
+# Tests for scripts/history.sh and check.sh, on real git repositories.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-scripts="$repo/skills/lint/scripts"
+scripts="$repo/scripts"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1

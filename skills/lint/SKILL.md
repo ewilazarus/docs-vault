@@ -1,17 +1,26 @@
 ---
 name: lint
 description: Check this project's docs/ vault as a whole, and list its problems as a table, including broken wikilinks and heading links, bare § references, malformed or future journal days, and decisions with a shared number, no date, no Why or no journal link. Use when the user runs /docs-vault:lint or asks to check, lint, validate or health-check the docs vault, or to find broken links in it.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/lint.sh), Read, Grep, Glob, Bash(rg *), Bash(fd *)
+disable-model-invocation: true
+context: fork
+agent: docs-vault:vault-keeper
+background: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/lint.sh), Read, Grep, Glob, Bash(rg *), Bash(fd *)
 ---
 
 # Lint the docs vault
+
+You're running this as the vault-keeper, for the user's `/docs-vault:lint` command. Your
+final message is for the user to read, in Markdown, not JSON. Where these steps say to ask
+the user, end your reply with the numbered questions, and say they can answer in the
+conversation for Claude to pass on; carry on when their answers arrive.
 
 The hooks check each write as Claude makes it. Shell commands, edits in Obsidian and
 merges between branches get past them, and a rename can break links in notes nobody
 touched. This checks the whole vault as it stands. A script has already run the checks, so
 the list doesn't depend on judgement. Here is its output:
 
-!`${CLAUDE_SKILL_DIR}/scripts/lint.sh`
+!`${CLAUDE_PLUGIN_ROOT}/scripts/lint.sh`
 
 ## 1. Show the list
 
@@ -40,7 +49,7 @@ After the table, sort the rows into two groups, citing their `#`:
 Two errors need the user to choose:
 
 - **A shared decision number** usually comes from two branches that each took the next
-  one. The later decision needs a new number, from the record skill's `next-decision.sh`,
+  one. The later decision needs a new number, from `next-decision.sh`,
   and the journal links to it need updating. Ask before renaming it, because other
   people's branches may link to it.
 - **A link to a note that doesn't exist yet** may be deliberate. Some vaults leave
@@ -49,7 +58,7 @@ Two errors need the user to choose:
 
 ## 3. Stop
 
-Don't fix anything yet. Offer to, and wait for the user's go-ahead. The fixes are writes to
-the vault, so they go through `/docs-vault:record`. Load it before the first edit. Fixing
-lint findings is housekeeping, not something that happened in the project, so it doesn't
-get a journal entry unless the user asks for one.
+Don't fix anything yet. End your reply by asking which fixes to make, with the
+questions above among them. Make the ones the user approves under the record rules, once
+their answers arrive. Fixing lint findings is housekeeping, not something that happened
+in the project, so it doesn't get a journal entry unless the user asks for one.

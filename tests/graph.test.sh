@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Tests for skills/graph/scripts/graph.sh: showing, converting, and what it keeps.
+# Tests for scripts/graph.sh: showing, converting, and what it keeps.
 
 set -eu
 . "$(dirname "$0")/lib.sh"
 
-graph="$repo/skills/graph/scripts/graph.sh"
+graph="$repo/scripts/graph.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 

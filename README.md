@@ -1,7 +1,8 @@
 # docs-vault
 
-Claude Code skills for projects that keep a `docs/` folder as an Obsidian vault. They give
-the vault three kinds of durable project memory:
+A Claude Code plugin for projects that keep a `docs/` folder as an Obsidian vault. One
+agent, the **vault-keeper**, keeps the vault, and it gives the project three kinds of
+durable project memory:
 
 - **Notes: what is true now.** Every note outside the two folders below, organised however
   the project likes, and rewritten in place when the facts change.
@@ -12,7 +13,7 @@ the vault three kinds of durable project memory:
 
 Git records exactly what changed in the repo. Raw AI activity, meaning the commands run, the
 files touched, the tests rerun and the approaches tried, is not project memory, so the vault
-doesn't keep it. `record` is deliberately lossy: it keeps outcomes and drops execution, and
+doesn't keep it. Recording is deliberately lossy: it keeps outcomes and drops execution, and
 for routine work git already explains, it writes nothing at all.
 
 Everything else (folders, templates, bases, tags, working rules) is up to each project, and
@@ -43,7 +44,7 @@ description: "Reworked authentication and settled on middleware authorization."
 ```
 
 - **Today's file converges.** Each bullet is a workstream or an outcome, not an AI session.
-  A later `record` the same day refines the bullets already there instead of appending a new
+  A later record the same day refines the bullets already there instead of appending a new
   section, and keeps what you wrote in it yourself.
 - **Past days are history.** Once the day is over, its prose doesn't change. Anything
   learned later goes in today's file.
@@ -84,30 +85,67 @@ heading, so a box under a `###` heading inside Follow-ups falls out of this quer
 affects `/todos`.
 
 Day files written before this format used `### #decision` and `### #todo` blocks. They are
-left as they are: `recall` still reads them, and `/todos` still lists their open boxes,
+left as they are: the keeper still reads them, and `/todos` still lists their open boxes,
 marked as legacy.
 
-The plugin ships seven skills:
+## The vault-keeper
 
-| Skill | What it does |
+Reading a vault costs context: answering one question can mean reading five notes, a few
+journal days and a decision, and recording one piece of work means rereading the notes it
+touches. So the main Claude never opens `docs/`. It sends the `docs-vault:vault-keeper`
+agent a request, and gets back a short answer:
+
+- **Ask**, in the foreground: `{"kind": "ask", "question": "…"}`. The keeper reads what it
+  needs and replies with the answer, the `[[links]]` it rests on, and anywhere the notes,
+  the journal, the decisions and the system disagree.
+- **Record**, in the background, once there's something worth keeping. The brief carries
+  what git can't show: facts that changed, each decision and why, what was tried and
+  dropped, what's left open and how to tell it's done, follow-ups finished, and notes found
+  wrong. The keeper reads git for the rest, then writes, or explains why nothing needs
+  writing.
+- **Questions go through Claude.** A subagent can't talk to you, so when the keeper needs
+  an answer, its reply says `input-required` with its questions. Claude asks you, then
+  resumes the same keeper with your answers.
+
+Both directions are JSON, checked by `scripts/contract.sh`. A hook refuses a request that
+doesn't fit, saying exactly what's missing ("`decided[0]` needs `why`"), and sends back a
+reply that doesn't fit. The reply states follow the A2A task states: `completed`,
+`input-required`, `failed`. The main Claude learns the format from the `keeper-contract`
+skill, the only docs-vault skill it can see. It loads only when needed, so a session that
+never touches the vault carries just a few lines about it, from the project's `CLAUDE.md`.
+
+The keeper's own rules, for looking things up and for recording, live in `keeper/` and are
+handed to it as it starts. Its instructions and the contract are in
+`agents/vault-keeper.md`.
+
+## Commands
+
+You can also go to the keeper directly. These run inside it, so their work stays out of
+the main conversation, and their result comes back to you in Markdown:
+
+| Command | What it does |
 |---|---|
-| `init` | Run once, as `/docs-vault:init`. It surveys `docs/`, offers both plugins to the project through its settings, creates `Journal/` and `Decisions/`, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, and records the setup as the first journal entry. A bundled script makes the file changes, showing them first as a plan: it only adds what's missing, keeps any setting already set differently, and changes nothing on a second run. It never overwrites existing files. |
-| `recall` | Read-only. Loads on its own before work the vault documents, or when you ask what happened, what was decided or what is open. It reads `Conventions.md`, answers what is true from the notes, what happened from the journal and why from the decisions, flags where they disagree, and hands over to `record` once there is something to write down. Its lookups run without permission prompts. A bundled script checks that the Obsidian CLI is pointed at this project's vault before Claude queries it, and the other skills use the same script to reload Obsidian safely. |
-| `todos` | Run as `/docs-vault:todos`. A bundled script lists every open follow-up in the journal as a table: the day it was raised, its text and its sub-items. Claude prints the table as-is and recommends the easiest item to pick up next. |
-| `lint` | Run as `/docs-vault:lint`. A bundled script checks the whole vault, including what shell commands, Obsidian and merges wrote past the hooks: broken wikilinks, heading links and block links, bare `§` references, misnamed, future or malformed journal days, and decisions with a shared number, no `date:`, no `## Why` or no journal day linking them. Claude prints the table as-is, separates what can be fixed from history that stays as it is, and fixes nothing until you say so. |
-| `graph` | Run as `/docs-vault:graph`, or ask to colour the graph view. It gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`, then offers to reload Obsidian so the colours show. Claude picks the groups and colours, and a bundled script writes them, keeping your other graph settings and any groups you chose unless you say otherwise. |
-| `preset` | Run as `/docs-vault:preset`. It saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets, and the sidebar layout without any open notes) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
-| `record` | Rewrites notes when a fact changes, merges meaningful outcomes into today's journal, writes a decision note for a choice worth explaining, and adds or ticks follow-ups. Often it rightly writes nothing. It loads `recall` first, finds existing follow-ups with the `todos` script, names new decisions with a bundled script, and checks what it wrote with the `lint` script. |
+| `/docs-vault:init` | Run once per project. It surveys `docs/`, offers both plugins to the project through its settings, creates `Journal/` and `Decisions/`, writes `Conventions.md` with you, adds a short docs-vault section to the project's `CLAUDE.md`, can set up the git checks, and records the setup as the first journal entry. A bundled script makes the file changes, shown first as a plan: it only adds what's missing, keeps any setting already set differently, and changes nothing on a second run. Its questions come to you in one round. |
+| `/docs-vault:ask <question>` | Look something up yourself: what is true from the notes, what happened from the journal, why from the decisions, with links and any disagreements. |
+| `/docs-vault:record` | Runs in the main conversation, since only it knows what happened: Claude turns the conversation into a record request and sends it to the keeper in the background. |
+| `/docs-vault:todos` | A bundled script lists every open follow-up in the journal as a table: the day it was raised, its text and its sub-items. The keeper shows it as-is and recommends the easiest item to pick up next. |
+| `/docs-vault:lint` | A bundled script checks the whole vault, including what shell commands, Obsidian and merges wrote past the hooks: broken wikilinks, heading links and block links, bare `§` references, misnamed, future or malformed journal days, and decisions with a shared number, no `date:`, no `## Why` or no journal day linking them. It shows the table, separates what can be fixed from history that stays as it is, and fixes nothing until you say so. |
+| `/docs-vault:graph` | Gives each kind of note its own colour in Obsidian's graph view, based on the layout in `Conventions.md`. A bundled script writes the colours, keeping your other graph settings and any groups you chose unless you say otherwise, and it offers to reload Obsidian. |
+| `/docs-vault:preset` | Saves a vault's Obsidian settings (app, appearance, core and community plugins and their settings, hotkeys, graph, CSS snippets, and the sidebar layout without any open notes) as a named preset in `~/.config/docs-vault/presets/`, and applies one to another vault. It shows the changes first, lets you choose how to settle conflicts, installs missing community plugins fresh, and never copies notes or plugin code. |
 
 ## Hooks
 
-When installed as a plugin, `docs-vault` also ships hooks, so the skills don't depend on
-Claude remembering to load them:
+The plugin's hooks hold the design in place, so none of it depends on Claude remembering:
 
-- **Reading `docs/`** without `recall` loaded adds a reminder to load it.
-- **Writing `docs/`** without `record` (or `init`) loaded is blocked until Claude loads it.
-  Subagents count separately, because they don't share the parent's context. Obsidian's
-  own settings in `docs/.obsidian/` are exempt, because they aren't notes.
+- **Only the keeper touches `docs/`.** Reads and writes from the main Claude, or any other
+  agent, are refused and pointed at the keeper. Obsidian's own settings in
+  `docs/.obsidian/` are exempt, because they aren't notes.
+- **The keeper starts with its rules,** and each request and reply is checked against the
+  contract, as above.
+- **The keeper's own commands run without prompts:** the plugin's scripts, read-only git
+  commands and `date`, each on its own. A plugin agent can't carry permission rules, so
+  the hook approves exactly those. Anything combined with `&&`, a pipe, a substitution or
+  a redirection still asks you.
 - **Editing a past journal day** is blocked unless the only changes tick or untick
   checkboxes, at any depth and without touching their text, or re-point a broken
   `[[link]]` while keeping its displayed text. Creating a backdated day file is blocked
@@ -118,20 +156,20 @@ Claude remembering to load them:
   `date:` set to today in their frontmatter. "Next" counts the decisions on every local
   and remote-tracking branch too, so two branches don't both take the same number. One may be refined on the day it was made. After that, the same rule as a past journal day applies, because a changed
   mind is a new decision.
-- **Each note Claude writes is linted** straight after the write, with the `lint` script
+- **Each note the keeper writes is linted** straight after the write, with the `lint` script
   limited to that note. Any errors, such as a broken link or a day without a Summary, go
-  back to Claude to fix while the note is still in hand. Warnings are left to
+  back to the keeper to fix while the note is still in hand. Warnings are left to
   `/docs-vault:lint`, since a note may be only part-way written.
 - **Merges are linted too.** After Claude runs `git merge`, `pull`, `rebase` or
   `cherry-pick`, the notes it changed in `docs/` are linted the same way. That is where a
   decision number taken on two branches, or a link to a note renamed on the other side,
   first shows up. Claude reports it, and asks before renumbering a decision.
-- **A reminder to record, before finishing.** If a session read the vault with `recall`,
-  then changed project files outside `docs/`, and `record` hasn't run since, Claude is
-  asked once, as it stops, whether any of it is worth recording. Often the answer is no,
-  and it says so in a line. Loading `record` or getting the reminder clears it, so it
-  comes back only after new changes. To turn it off, set `DOCS_VAULT_STOP_REMINDER=off`,
-  for example in the `env` of `.claude/settings.local.json`.
+- **A reminder to record, before finishing.** If a session used the keeper, then changed
+  project files outside `docs/`, and hasn't sent it a record request since, Claude is asked
+  once, as it stops, whether any of it is worth recording. Often the answer is no, and it
+  says so in a line. A record request or the reminder clears it, so it comes back only
+  after new changes. To turn it off, set `DOCS_VAULT_STOP_REMINDER=off`, for example in the
+  `env` of `.claude/settings.local.json`.
 - **Section references** are links. A write that adds a bare `§4.2` outside a link or code
   is blocked, with a hint to write `[[Spec#4.2 Assertion|Spec §4.2]]` instead. References
   already in a file don't count, so old notes can still be edited.
@@ -226,13 +264,6 @@ its `.claude/settings.json`:
   }
 }
 ```
-
-Alternatively, copy each folder under `skills/` into the project's `.claude/skills/` as
-`docs-vault-init`, `docs-vault-recall`, `docs-vault-record`, `docs-vault-todos`, `docs-vault-lint`, `docs-vault-graph` and `docs-vault-preset`. The prefix keeps `init` from
-clashing with Claude Code's built-in `/init`. Copied skills don't get the hooks or the
-dependency, so install kepano's obsidian-skills yourself. Some skills run another skill's
-script, as `../recall/scripts/obsidian.sh` for example, and with the prefix those folders
-are `../docs-vault-recall/…` instead, so expect a permission prompt the first time.
 
 ## Tests
 

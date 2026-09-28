@@ -1,13 +1,23 @@
 ---
 name: init
-description: Bootstrap a project's docs/ folder as an Obsidian vault for the recall and record skills. It sets up the journal and the decisions folder, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
+description: Bootstrap a project's docs/ folder as an Obsidian vault, kept by the vault-keeper agent. It sets up the journal and the decisions folder, writes the project's Conventions.md with the user, adds a docs-vault section to the project's CLAUDE.md, and offers the plugins to everyone on the project through its settings. Run once per project, when the user asks to set up, initialise or bootstrap the docs vault.
 disable-model-invocation: true
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/init.sh *), Bash(${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh *)
+context: fork
+agent: docs-vault:vault-keeper
+background: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/init.sh *), Bash(${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh *)
 ---
 
 # Bootstrap the docs vault
 
-This sets up a project so the `recall` and `record` skills can operate it. docs-vault owns
+You're running this as the vault-keeper, for the user's `/docs-vault:init` command. Your
+final message is for the user to read, in Markdown, not JSON. Where these steps say to ask
+the user, end your reply with the numbered questions, and say they can answer in the
+conversation for Claude to pass on; carry on when their answers arrive. **Ask everything
+in one round:** the choices from step 2 and the questions from step 4 together, after the
+plan's output, so the user answers once.
+
+This sets up a project so you can keep its vault from then on. docs-vault owns
 only two folders: `Journal/`, the daily record of what meaningful things happened and what
 was left open, and `Decisions/`, one note per important choice and its reason. Everything
 else is defined by the `Conventions.md` you write here, together with the user.
@@ -22,8 +32,8 @@ missing, keeps any value that is already set differently and says so, and change
 on a second run. Don't make those edits by hand.
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/init.sh plan  [--agents-md import|append] [--ignore-plugins] [--checks]
-${CLAUDE_SKILL_DIR}/scripts/init.sh apply [--agents-md import|append] [--ignore-plugins] [--checks]
+${CLAUDE_PLUGIN_ROOT}/scripts/init.sh plan  [--agents-md import|append] [--ignore-plugins] [--checks]
+${CLAUDE_PLUGIN_ROOT}/scripts/init.sh apply [--agents-md import|append] [--ignore-plugins] [--checks]
 ```
 
 Run it from the project root.
@@ -36,7 +46,7 @@ test -f docs/Conventions.md && sed -n '1,40p' docs/Conventions.md
 fd . docs -t d -d 2 -E .obsidian 2>/dev/null || find docs -maxdepth 2 -type d -not -path '*/.obsidian*'
 git rev-parse --is-inside-work-tree 2>/dev/null || echo "not a git repo"
 pgrep -xq Obsidian && echo "Obsidian is running"
-${CLAUDE_SKILL_DIR}/scripts/init.sh plan
+${CLAUDE_PLUGIN_ROOT}/scripts/init.sh plan
 ```
 
 If `docs/` already holds notes, the conventions describe *those notes as they are*. Don't
@@ -102,7 +112,7 @@ Run `init.sh apply` with the flags chosen in step 2, and show its output.
 back when they change.** If Daily notes was changed and Obsidian is running, the change won't
 show until it reloads, and it can be lost if the user changes a setting in the meantime.
 Offer to reload it. With the user's OK, run
-`${CLAUDE_SKILL_DIR}/../recall/scripts/obsidian.sh reload`. It reloads only after checking
+`${CLAUDE_PLUGIN_ROOT}/scripts/obsidian.sh reload`. It reloads only after checking
 that the CLI targets this vault, and says what to do if it didn't. A vault Obsidian hasn't
 opened yet has nothing to reload: step 6 tells the user to open it.
 
@@ -138,7 +148,7 @@ survey turned up.
 
 ## 5. Record the setup
 
-Load `/docs-vault:record`, then write today's journal the way it describes. Keep it short:
+Write today's journal under the record rules. Keep it short:
 a `## Summary` with a bullet or two on what was set up, not one per answer the user gave.
 Write a decision note only for a choice from step 4 whose reason will matter later, such
 as a layout rule the project commits to, and link it under `## Decisions`. Put anything
@@ -148,5 +158,6 @@ under `## Follow-ups` as plain checkboxes.
 ## 6. Hand over
 
 Tell the user to open `docs/` as a vault in Obsidian (Open folder as vault), and that
-`recall` and `record` take over from here. If the layout has more than one folder, mention that `/docs-vault:graph` colour-codes the graph view by folder. If `~/.config/docs-vault/presets/` holds saved presets, offer `/docs-vault:preset` to apply one, so the new vault gets the user's usual Obsidian settings. Summarise what was created, what was already there, and
+from now on they, and Claude, reach it through the vault-keeper: Claude sends it lookups and
+records work, and they can run `/docs-vault:ask` and `/docs-vault:record` themselves. If the layout has more than one folder, mention that `/docs-vault:graph` colour-codes the graph view by folder. If `~/.config/docs-vault/presets/` holds saved presets, offer `/docs-vault:preset` to apply one, so the new vault gets the user's usual Obsidian settings. Summarise what was created, what was already there, and
 what was skipped.
